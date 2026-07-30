@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AlumniController;
+use App\Http\Controllers\AlumniImportController;
 use App\Http\Controllers\CiProjectController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EducationRecordController;
@@ -11,6 +12,10 @@ Route::inertia('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified', 'staff'])->group(function () {
     Route::get('dashboard', DashboardController::class)->name('dashboard');
+
+    Route::get('alumni/import', [AlumniImportController::class, 'show'])->name('alumni.import.show');
+    Route::get('alumni/import/template', [AlumniImportController::class, 'template'])->name('alumni.import.template');
+    Route::post('alumni/import', [AlumniImportController::class, 'store'])->name('alumni.import.store');
 
     Route::resource('alumni', AlumniController::class)->parameters(['alumni' => 'alumni']);
     Route::post('alumni/{alumni}/verify', [AlumniController::class, 'verify'])->name('alumni.verify');

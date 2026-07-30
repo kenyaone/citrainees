@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -64,12 +64,20 @@ export default function AlumniIndex({ alumni, projects, filters }: Props) {
             <div className="flex flex-col gap-4 p-4">
                 <div className="flex items-start justify-between">
                     <Heading title="Alumni" description="All Compassion International Kenya alumni records." />
-                    <Button asChild>
-                        <Link href="/alumni/create">
-                            <Plus className="mr-1 h-4 w-4" />
-                            Add alumnus
-                        </Link>
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button variant="outline" asChild>
+                            <Link href="/alumni/import">
+                                <Upload className="mr-1 h-4 w-4" />
+                                Import CSV
+                            </Link>
+                        </Button>
+                        <Button asChild>
+                            <Link href="/alumni/create">
+                                <Plus className="mr-1 h-4 w-4" />
+                                Add alumnus
+                            </Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <Card className="p-4">
