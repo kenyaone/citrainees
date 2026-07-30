@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureAlumni;
 use App\Http\Middleware\EnsureStaff;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'staff' => EnsureStaff::class,
+            'alumni' => EnsureAlumni::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

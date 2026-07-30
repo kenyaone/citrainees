@@ -21,6 +21,7 @@ class Alumni extends Model
         'phone_primary', 'email_secondary',
         'is_public', 'field_visibility',
         'verified_at', 'verified_by',
+        'signup_token', 'signup_token_expires_at', 'signup_completed_at',
     ];
 
     protected function casts(): array
@@ -30,6 +31,8 @@ class Alumni extends Model
             'is_public' => 'boolean',
             'field_visibility' => 'array',
             'verified_at' => 'datetime',
+            'signup_token_expires_at' => 'datetime',
+            'signup_completed_at' => 'datetime',
             'kcse_index_number' => 'encrypted',
             'phone_primary' => 'encrypted',
             'email_secondary' => 'encrypted',

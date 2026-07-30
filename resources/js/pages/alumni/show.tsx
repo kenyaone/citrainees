@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import { CheckCircle2, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react';
+import { CheckCircle2, Pencil, Plus, Send, ShieldCheck, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -354,6 +354,14 @@ export default function AlumniShow({ alumni }: Props) {
                         }
                     />
                     <div className="flex gap-2">
+                        {!alumni.user_id && (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href={`/alumni/${alumni.id}/invite`}>
+                                    <Send className="mr-1 h-4 w-4" />
+                                    Invite
+                                </Link>
+                            </Button>
+                        )}
                         {!alumni.verified_at && (
                             <Button variant="outline" size="sm" onClick={verify}>
                                 <ShieldCheck className="mr-1 h-4 w-4" />
