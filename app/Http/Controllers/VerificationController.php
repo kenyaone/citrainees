@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alumni;
+use App\Models\SkillVerificationRequest;
 use App\Models\Verification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,26 +16,55 @@ class VerificationController extends Controller
 {
     public function index(Request $request): Response
     {
+        $tab = $request->string('tab', 'profile')->toString();
         $status = $request->string('status', 'pending')->toString();
 
-        $verifications = Verification::with([
-            'alumni:id,first_name,last_name,ci_project_id',
-            'alumni.ciProject:id,name,code',
-            'submitter:id,name',
-            'reviewer:id,name',
-        ])
-            ->when(in_array($status, ['pending', 'approved', 'rejected'], true), fn ($q) => $q->where('status', $status))
-            ->orderByDesc('created_at')
-            ->paginate(20)
-            ->withQueryString();
+        if ($tab === 'skills') {
+            $items = SkillVerificationRequest::with([
+                'alumni:id,first_name,last_name,ci_project_id',
+                'alumni.ciProject:id,name,code',
+                'skill:id,name,category',
+                'reviewer:id,name',
+            ])
+                ->when(in_array($status, ['pending', 'approved', 'rejected'], true), fn ($q) => $q->where('status', $status))
+                ->orderByDesc('created_at')
+                ->paginate(20)
+                ->withQueryString();
+
+            $items->getCollection()->transform(function (SkillVerificationRequest $r) {
+                $r->evidence_url = $r->evidence_path
+                    ? Storage::url($r->evidence_path)
+                    : null;
+                return $r;
+            });
+        } else {
+            $items = Verification::with([
+                'alumni:id,first_name,last_name,ci_project_id',
+                'alumni.ciProject:id,name,code',
+                'submitter:id,name',
+                'reviewer:id,name',
+            ])
+                ->when(in_array($status, ['pending', 'approved', 'rejected'], true), fn ($q) => $q->where('status', $status))
+                ->orderByDesc('created_at')
+                ->paginate(20)
+                ->withQueryString();
+        }
 
         return Inertia::render('verifications/index', [
-            'verifications' => $verifications,
+            'tab' => $tab,
+            'items' => $items,
             'status' => $status,
             'counts' => [
-                'pending' => Verification::where('status', 'pending')->count(),
-                'approved' => Verification::where('status', 'approved')->count(),
-                'rejected' => Verification::where('status', 'rejected')->count(),
+                'profile' => [
+                    'pending' => Verification::where('status', 'pending')->count(),
+                    'approved' => Verification::where('status', 'approved')->count(),
+                    'rejected' => Verification::where('status', 'rejected')->count(),
+                ],
+                'skills' => [
+                    'pending' => SkillVerificationRequest::where('status', 'pending')->count(),
+                    'approved' => SkillVerificationRequest::where('status', 'approved')->count(),
+                    'rejected' => SkillVerificationRequest::where('status', 'rejected')->count(),
+                ],
             ],
         ]);
     }

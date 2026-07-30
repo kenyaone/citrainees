@@ -12,6 +12,7 @@ use App\Http\Controllers\EducationRecordController;
 use App\Http\Controllers\EmploymentRecordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SignupController;
+use App\Http\Controllers\SkillVerificationRequestController;
 use App\Http\Controllers\VerificationController;
 use Illuminate\Support\Facades\Route;
 
@@ -35,6 +36,8 @@ Route::middleware(['auth', 'verified', 'alumni'])->group(function () {
     Route::get('attempts/{attempt}/take', [AlumniAssessmentController::class, 'take'])->name('assessments.take');
     Route::post('attempts/{attempt}/submit', [AlumniAssessmentController::class, 'submit'])->name('assessments.submit');
     Route::get('attempts/{attempt}/result', [AlumniAssessmentController::class, 'result'])->name('assessments.result');
+
+    Route::post('skill-certificates', [SkillVerificationRequestController::class, 'store'])->name('skill-certificates.store');
 });
 
 Route::middleware(['auth', 'verified', 'staff'])->group(function () {
@@ -72,6 +75,10 @@ Route::middleware(['auth', 'verified', 'staff'])->group(function () {
     Route::get('verifications', [VerificationController::class, 'index'])->name('verifications.index');
     Route::post('verifications/{verification}/approve', [VerificationController::class, 'approve'])->name('verifications.approve');
     Route::post('verifications/{verification}/reject', [VerificationController::class, 'reject'])->name('verifications.reject');
+
+    Route::post('skill-verifications/{skillVerification}/approve', [SkillVerificationRequestController::class, 'approve'])->name('skill-verifications.approve');
+    Route::post('skill-verifications/{skillVerification}/reject', [SkillVerificationRequestController::class, 'reject'])->name('skill-verifications.reject');
+    Route::delete('skill-verifications/{skillVerification}', [SkillVerificationRequestController::class, 'destroy'])->name('skill-verifications.destroy');
 });
 
 require __DIR__.'/settings.php';

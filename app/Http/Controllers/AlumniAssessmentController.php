@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\SkillAssessment;
 use App\Models\SkillAssessmentAttempt;
+use App\Models\SkillVerificationRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -17,22 +18,33 @@ class AlumniAssessmentController extends Controller
     public function index(Request $request): Response
     {
         $alumni = $request->user()->alumniProfile;
-        $alumniSkillIds = $alumni->skills->pluck('id');
+        $alumni->load('skills');
 
-        $assessments = SkillAssessment::with('skill:id,name,category')
-            ->where('is_active', true)
-            ->whereIn('skill_id', $alumniSkillIds)
+        $assessmentsBySkill = SkillAssessment::where('is_active', true)
+            ->whereIn('skill_id', $alumni->skills->pluck('id'))
             ->withCount('questions')
             ->get()
-            ->map(function (SkillAssessment $a) use ($alumni) {
-                $latest = SkillAssessmentAttempt::where('alumni_id', $alumni->id)
-                    ->where('skill_assessment_id', $a->id)
-                    ->orderByDesc('created_at')
-                    ->first();
+            ->keyBy('skill_id');
 
-                $pivot = $alumni->skills->firstWhere('id', $a->skill_id)?->pivot;
-                $verified = $pivot && $pivot->verified_at !== null;
+        $certRequests = SkillVerificationRequest::where('alumni_id', $alumni->id)
+            ->whereIn('skill_id', $alumni->skills->pluck('id'))
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('skill_id');
 
+        $latestAttempts = SkillAssessmentAttempt::where('alumni_id', $alumni->id)
+            ->orderByDesc('created_at')
+            ->get()
+            ->groupBy('skill_assessment_id');
+
+        $skillItems = $alumni->skills->map(function ($skill) use ($assessmentsBySkill, $certRequests, $latestAttempts) {
+            $pivot = $skill->pivot;
+            $verified = $pivot?->verified_at !== null;
+
+            $assessment = $assessmentsBySkill[$skill->id] ?? null;
+            $quizPath = null;
+            if ($assessment) {
+                $latest = $latestAttempts[$assessment->id][0] ?? null;
                 $cooldownUntil = null;
                 if ($latest && ! $latest->passed && $latest->submitted_at) {
                     $unlockAt = $latest->submitted_at->copy()->addDays(self::COOLDOWN_DAYS);
@@ -40,18 +52,13 @@ class AlumniAssessmentController extends Controller
                         $cooldownUntil = $unlockAt->toIso8601String();
                     }
                 }
-
-                return [
-                    'id' => $a->id,
-                    'title' => $a->title,
-                    'description' => $a->description,
-                    'skill_name' => $a->skill->name,
-                    'skill_category' => $a->skill->category,
-                    'question_count' => $a->questions_count,
-                    'pass_threshold' => $a->pass_threshold,
-                    'time_limit_minutes' => $a->time_limit_minutes,
-                    'verified' => $verified,
-                    'verified_via' => $pivot?->verified_via,
+                $quizPath = [
+                    'assessment_id' => $assessment->id,
+                    'title' => $assessment->title,
+                    'description' => $assessment->description,
+                    'question_count' => $assessment->questions_count,
+                    'pass_threshold' => $assessment->pass_threshold,
+                    'time_limit_minutes' => $assessment->time_limit_minutes,
                     'latest_attempt' => $latest ? [
                         'id' => $latest->id,
                         'score' => $latest->score,
@@ -61,10 +68,38 @@ class AlumniAssessmentController extends Controller
                     ] : null,
                     'cooldown_until' => $cooldownUntil,
                 ];
-            });
+            }
+
+            $certList = ($certRequests[$skill->id] ?? collect())->map(fn ($r) => [
+                'id' => $r->id,
+                'status' => $r->status,
+                'reviewer_notes' => $r->reviewer_notes,
+                'created_at' => $r->created_at->toIso8601String(),
+                'reviewed_at' => $r->reviewed_at?->toIso8601String(),
+            ])->values();
+
+            return [
+                'id' => $skill->id,
+                'name' => $skill->name,
+                'category' => $skill->category,
+                'verified' => $verified,
+                'verified_via' => $pivot?->verified_via,
+                'verified_at' => $pivot?->verified_at,
+                'quiz_path' => $quizPath,
+                'certificate_requests' => $certList,
+            ];
+        })->values();
+
+        $summary = [
+            'total' => $skillItems->count(),
+            'verified' => $skillItems->where('verified', true)->count(),
+            'quiz_available' => $skillItems->whereNotNull('quiz_path')->count(),
+            'cert_pending' => $skillItems->filter(fn ($s) => collect($s['certificate_requests'])->contains('status', 'pending'))->count(),
+        ];
 
         return Inertia::render('assessments/index', [
-            'assessments' => $assessments,
+            'skills' => $skillItems,
+            'summary' => $summary,
         ]);
     }
 
