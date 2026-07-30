@@ -442,11 +442,24 @@ export default function AlumniShow({ alumni }: Props) {
                             <CardTitle>Skills</CardTitle>
                         </CardHeader>
                         <CardContent className="flex flex-wrap gap-1">
-                            {alumni.skills.map((s) => (
-                                <Badge key={s.id} variant="secondary">
-                                    {s.name}
-                                </Badge>
-                            ))}
+                            {alumni.skills.map((s) => {
+                                const verified = s.pivot?.verified_at != null;
+                                return (
+                                    <Badge
+                                        key={s.id}
+                                        variant={verified ? 'default' : 'secondary'}
+                                        className={verified ? 'bg-emerald-600 hover:bg-emerald-700 gap-1' : 'gap-1'}
+                                        title={
+                                            verified
+                                                ? `Verified via ${s.pivot?.verified_via ?? 'quiz'}`
+                                                : 'Self-declared, not verified'
+                                        }
+                                    >
+                                        {verified && <CheckCircle2 className="h-3 w-3" />}
+                                        {s.name}
+                                    </Badge>
+                                );
+                            })}
                         </CardContent>
                     </Card>
                 )}

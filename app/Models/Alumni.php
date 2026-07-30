@@ -66,7 +66,9 @@ class Alumni extends Model
 
     public function skills()
     {
-        return $this->belongsToMany(Skill::class)->withPivot('proficiency')->withTimestamps();
+        return $this->belongsToMany(Skill::class)
+            ->withPivot('proficiency', 'verified_at', 'verified_via', 'verified_by')
+            ->withTimestamps();
     }
 
     public function consents()

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AlumniAssessmentController;
 use App\Http\Controllers\AlumniController;
 use App\Http\Controllers\AlumniImportController;
 use App\Http\Controllers\AlumniInviteController;
@@ -28,6 +29,12 @@ Route::middleware(['auth', 'verified', 'alumni'])->group(function () {
     Route::patch('my-profile', [AlumniSelfController::class, 'update'])->name('my-profile.update');
     Route::post('my-profile/education', [AlumniSelfController::class, 'addEducation'])->name('my-profile.education.store');
     Route::post('my-profile/employment', [AlumniSelfController::class, 'addEmployment'])->name('my-profile.employment.store');
+
+    Route::get('assessments', [AlumniAssessmentController::class, 'index'])->name('assessments.index');
+    Route::post('assessments/{assessment}/start', [AlumniAssessmentController::class, 'start'])->name('assessments.start');
+    Route::get('attempts/{attempt}/take', [AlumniAssessmentController::class, 'take'])->name('assessments.take');
+    Route::post('attempts/{attempt}/submit', [AlumniAssessmentController::class, 'submit'])->name('assessments.submit');
+    Route::get('attempts/{attempt}/result', [AlumniAssessmentController::class, 'result'])->name('assessments.result');
 });
 
 Route::middleware(['auth', 'verified', 'staff'])->group(function () {

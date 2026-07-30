@@ -79,7 +79,12 @@ export interface Skill {
     id: number;
     name: string;
     category: string | null;
-    pivot?: { proficiency: string | null };
+    pivot?: {
+        proficiency: string | null;
+        verified_at?: string | null;
+        verified_via?: string | null;
+        verified_by?: number | null;
+    };
 }
 
 export interface Paginated<T> {

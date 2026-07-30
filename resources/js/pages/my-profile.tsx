@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import { Plus } from 'lucide-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { Award, CheckCircle2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -203,15 +203,39 @@ export default function MyProfile({ alumni, counties, skills }: Props) {
                             </div>
 
                             <div>
-                                <Label>My skills</Label>
+                                <div className="flex items-center justify-between mb-1">
+                                    <Label>My skills</Label>
+                                    <Button variant="link" size="sm" asChild className="h-auto p-0">
+                                        <Link href="/assessments">
+                                            <Award className="mr-1 h-4 w-4" />
+                                            Verify skills with a test
+                                        </Link>
+                                    </Button>
+                                </div>
                                 <p className="text-xs text-muted-foreground mb-2">
-                                    Tag the skills you have — employers use these to find you.
+                                    Tag the skills you have. Take an assessment to earn a verified badge that employers
+                                    trust.
                                 </p>
                                 <SkillsPicker
                                     allSkills={skills}
                                     selectedIds={skillIds}
                                     onChange={setSkillIds}
                                 />
+                                {alumni.skills && alumni.skills.some((s) => s.pivot?.verified_at) && (
+                                    <div className="mt-3 flex flex-wrap gap-1">
+                                        {alumni.skills
+                                            .filter((s) => s.pivot?.verified_at)
+                                            .map((s) => (
+                                                <Badge
+                                                    key={s.id}
+                                                    className="bg-emerald-600 hover:bg-emerald-700 gap-1"
+                                                >
+                                                    <CheckCircle2 className="h-3 w-3" />
+                                                    {s.name}
+                                                </Badge>
+                                            ))}
+                                    </div>
+                                )}
                             </div>
                             <div className="flex items-start gap-2 border rounded-md p-3 bg-muted/30">
                                 <Checkbox
