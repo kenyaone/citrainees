@@ -20,10 +20,10 @@ use Illuminate\Support\Facades\Route;
 Route::inertia('/', 'welcome')->name('home');
 
 Route::get('signup/{token}', [SignupController::class, 'show'])->name('signup.show');
-Route::post('signup/{token}', [SignupController::class, 'store'])->name('signup.store');
+Route::post('signup/{token}', [SignupController::class, 'store'])->middleware('throttle:public-token')->name('signup.store');
 
 Route::get('confirm-employment/{token}', [EmploymentConfirmationController::class, 'show'])->name('employment-confirm.show');
-Route::post('confirm-employment/{token}', [EmploymentConfirmationController::class, 'store'])->name('employment-confirm.store');
+Route::post('confirm-employment/{token}', [EmploymentConfirmationController::class, 'store'])->middleware('throttle:public-token')->name('employment-confirm.store');
 Route::get('confirm-employment-thanks', [EmploymentConfirmationController::class, 'thanks'])->name('employment-confirm.thanks');
 
 Route::middleware(['auth'])->group(function () {
@@ -44,7 +44,7 @@ Route::middleware(['auth', 'verified', 'alumni'])->group(function () {
     Route::post('attempts/{attempt}/submit', [AlumniAssessmentController::class, 'submit'])->name('assessments.submit');
     Route::get('attempts/{attempt}/result', [AlumniAssessmentController::class, 'result'])->name('assessments.result');
 
-    Route::post('skill-certificates', [SkillVerificationRequestController::class, 'store'])->name('skill-certificates.store');
+    Route::post('skill-certificates', [SkillVerificationRequestController::class, 'store'])->middleware('throttle:uploads')->name('skill-certificates.store');
 });
 
 Route::middleware(['auth', 'verified', 'staff'])->group(function () {
@@ -52,7 +52,7 @@ Route::middleware(['auth', 'verified', 'staff'])->group(function () {
 
     Route::get('alumni/import', [AlumniImportController::class, 'show'])->name('alumni.import.show');
     Route::get('alumni/import/template', [AlumniImportController::class, 'template'])->name('alumni.import.template');
-    Route::post('alumni/import', [AlumniImportController::class, 'store'])->name('alumni.import.store');
+    Route::post('alumni/import', [AlumniImportController::class, 'store'])->middleware('throttle:csv-import')->name('alumni.import.store');
 
     Route::get('alumni/{alumni}/invite', [AlumniInviteController::class, 'show'])->name('alumni.invite.show');
     Route::post('alumni/{alumni}/invite/regenerate', [AlumniInviteController::class, 'regenerate'])->name('alumni.invite.regenerate');
