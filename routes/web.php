@@ -4,6 +4,7 @@ use App\Http\Controllers\AlumniController;
 use App\Http\Controllers\AlumniImportController;
 use App\Http\Controllers\AlumniInviteController;
 use App\Http\Controllers\AlumniSelfController;
+use App\Http\Controllers\CiClusterController;
 use App\Http\Controllers\CiProjectController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EducationRecordController;
@@ -56,6 +57,10 @@ Route::middleware(['auth', 'verified', 'staff'])->group(function () {
     Route::resource('ci-projects', CiProjectController::class)
         ->except(['create', 'show', 'edit'])
         ->parameters(['ci-projects' => 'ciProject']);
+
+    Route::resource('ci-clusters', CiClusterController::class)
+        ->except(['create', 'show', 'edit'])
+        ->parameters(['ci-clusters' => 'ciCluster']);
 
     Route::get('verifications', [VerificationController::class, 'index'])->name('verifications.index');
     Route::post('verifications/{verification}/approve', [VerificationController::class, 'approve'])->name('verifications.approve');

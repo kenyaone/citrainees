@@ -23,33 +23,26 @@ import {
 } from '@/components/ui/table';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import type { CiProject } from '@/types/tracer';
 import { dashboard } from '@/routes';
 
 interface Cluster {
     id: number;
-    name: string;
     code: string;
+    name: string;
+    region: string | null;
+    notes: string | null;
+    projects_count?: number;
 }
 
 interface Props {
-    projects: (CiProject & { cluster?: Cluster | null; ci_cluster_id?: number | null })[];
     clusters: Cluster[];
 }
 
-const NONE = '__none__';
-const EMPTY = { code: '', name: '', county: '', sub_county: '', notes: '', ci_cluster_id: NONE };
+const EMPTY = { code: '', name: '', region: '', notes: '' };
 
-export default function CiProjectsIndex({ projects, clusters }: Props) {
+export default function CiClustersIndex({ clusters }: Props) {
     const [open, setOpen] = useState(false);
-    const [editing, setEditing] = useState<CiProject | null>(null);
+    const [editing, setEditing] = useState<Cluster | null>(null);
     const [values, setValues] = useState(EMPTY);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [processing, setProcessing] = useState(false);
@@ -61,16 +54,9 @@ export default function CiProjectsIndex({ projects, clusters }: Props) {
         setOpen(true);
     };
 
-    const openEdit = (p: Props['projects'][number]) => {
-        setEditing(p);
-        setValues({
-            code: p.code,
-            name: p.name,
-            county: p.county ?? '',
-            sub_county: p.sub_county ?? '',
-            notes: p.notes ?? '',
-            ci_cluster_id: p.ci_cluster_id ? String(p.ci_cluster_id) : NONE,
-        });
+    const openEdit = (c: Cluster) => {
+        setEditing(c);
+        setValues({ code: c.code, name: c.name, region: c.region ?? '', notes: c.notes ?? '' });
         setErrors({});
         setOpen(true);
     };
@@ -78,10 +64,6 @@ export default function CiProjectsIndex({ projects, clusters }: Props) {
     const submit = (e: FormEvent) => {
         e.preventDefault();
         setProcessing(true);
-        const payload = {
-            ...values,
-            ci_cluster_id: values.ci_cluster_id === NONE ? null : Number(values.ci_cluster_id),
-        };
         const opts = {
             onError: (errs: any) => setErrors(errs),
             onSuccess: () => {
@@ -92,34 +74,34 @@ export default function CiProjectsIndex({ projects, clusters }: Props) {
             onFinish: () => setProcessing(false),
         };
         if (editing) {
-            router.put(`/ci-projects/${editing.id}`, payload, opts);
+            router.put(`/ci-clusters/${editing.id}`, values, opts);
         } else {
-            router.post('/ci-projects', payload, opts);
+            router.post('/ci-clusters', values, opts);
         }
     };
 
-    const remove = (p: CiProject) => {
-        if (p.alumni_count && p.alumni_count > 0) {
-            alert(`Cannot delete ${p.name} — it has ${p.alumni_count} alumni records linked.`);
+    const remove = (c: Cluster) => {
+        if (c.projects_count && c.projects_count > 0) {
+            alert(`${c.name} has ${c.projects_count} project(s). Reassign or delete them first.`);
             return;
         }
-        if (confirm(`Remove ${p.name}?`)) {
-            router.delete(`/ci-projects/${p.id}`);
+        if (confirm(`Remove ${c.name}?`)) {
+            router.delete(`/ci-clusters/${c.id}`);
         }
     };
 
     return (
         <>
-            <Head title="CI project centres" />
+            <Head title="CI clusters" />
             <div className="flex flex-col gap-4 p-4">
                 <div className="flex items-start justify-between">
                     <Heading
-                        title="CI project centres"
-                        description="Compassion International project centres. Alumni are linked to the centre that sponsored them."
+                        title="CI clusters"
+                        description="Regional groupings of CI project centres. Each project belongs to at most one cluster."
                     />
                     <Button onClick={openCreate}>
                         <Plus className="mr-1 h-4 w-4" />
-                        Add project
+                        Add cluster
                     </Button>
                 </div>
 
@@ -129,35 +111,31 @@ export default function CiProjectsIndex({ projects, clusters }: Props) {
                             <TableRow>
                                 <TableHead>Code</TableHead>
                                 <TableHead>Name</TableHead>
-                                <TableHead>Cluster</TableHead>
-                                <TableHead>County</TableHead>
-                                <TableHead>Sub-county</TableHead>
-                                <TableHead className="text-right">Alumni</TableHead>
+                                <TableHead>Region</TableHead>
+                                <TableHead className="text-right">Projects</TableHead>
                                 <TableHead className="w-[100px]"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {projects.length === 0 ? (
+                            {clusters.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                                        No project centres yet. Add the first one to start linking alumni.
+                                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                                        No clusters yet. Add the first to start grouping projects regionally.
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                projects.map((p) => (
-                                    <TableRow key={p.id}>
-                                        <TableCell className="font-mono text-xs">{p.code}</TableCell>
-                                        <TableCell className="font-medium">{p.name}</TableCell>
-                                        <TableCell>{p.cluster?.name ?? '—'}</TableCell>
-                                        <TableCell>{p.county ?? '—'}</TableCell>
-                                        <TableCell>{p.sub_county ?? '—'}</TableCell>
-                                        <TableCell className="text-right">{p.alumni_count ?? 0}</TableCell>
+                                clusters.map((c) => (
+                                    <TableRow key={c.id}>
+                                        <TableCell className="font-mono text-xs">{c.code}</TableCell>
+                                        <TableCell className="font-medium">{c.name}</TableCell>
+                                        <TableCell>{c.region ?? '—'}</TableCell>
+                                        <TableCell className="text-right">{c.projects_count ?? 0}</TableCell>
                                         <TableCell>
                                             <div className="flex gap-1 justify-end">
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => openEdit(p)}
+                                                    onClick={() => openEdit(c)}
                                                     aria-label="Edit"
                                                 >
                                                     <Pencil className="h-4 w-4" />
@@ -165,7 +143,7 @@ export default function CiProjectsIndex({ projects, clusters }: Props) {
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => remove(p)}
+                                                    onClick={() => remove(c)}
                                                     aria-label="Remove"
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -183,7 +161,7 @@ export default function CiProjectsIndex({ projects, clusters }: Props) {
             <Dialog open={open} onOpenChange={setOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{editing ? 'Edit project centre' : 'Add project centre'}</DialogTitle>
+                        <DialogTitle>{editing ? 'Edit cluster' : 'Add cluster'}</DialogTitle>
                     </DialogHeader>
                     <form onSubmit={submit} className="space-y-3">
                         <div>
@@ -191,7 +169,7 @@ export default function CiProjectsIndex({ projects, clusters }: Props) {
                             <Input
                                 value={values.code}
                                 onChange={(e) => setValues({ ...values, code: e.target.value })}
-                                placeholder="e.g. KE-0421"
+                                placeholder="e.g. RIFT-01"
                                 required
                             />
                             <InputError message={errors.code} />
@@ -206,40 +184,12 @@ export default function CiProjectsIndex({ projects, clusters }: Props) {
                             <InputError message={errors.name} />
                         </div>
                         <div>
-                            <Label>Cluster</Label>
-                            <Select
-                                value={values.ci_cluster_id}
-                                onValueChange={(v) => setValues({ ...values, ci_cluster_id: v })}
-                            >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select cluster" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value={NONE}>— None —</SelectItem>
-                                    {clusters.map((c) => (
-                                        <SelectItem key={c.id} value={String(c.id)}>
-                                            {c.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <InputError message={errors.ci_cluster_id} />
-                        </div>
-                        <div className="grid gap-3 md:grid-cols-2">
-                            <div>
-                                <Label>County</Label>
-                                <Input
-                                    value={values.county}
-                                    onChange={(e) => setValues({ ...values, county: e.target.value })}
-                                />
-                            </div>
-                            <div>
-                                <Label>Sub-county</Label>
-                                <Input
-                                    value={values.sub_county}
-                                    onChange={(e) => setValues({ ...values, sub_county: e.target.value })}
-                                />
-                            </div>
+                            <Label>Region</Label>
+                            <Input
+                                value={values.region}
+                                onChange={(e) => setValues({ ...values, region: e.target.value })}
+                                placeholder="e.g. Rift Valley"
+                            />
                         </div>
                         <div>
                             <Label>Notes</Label>
@@ -264,9 +214,9 @@ export default function CiProjectsIndex({ projects, clusters }: Props) {
     );
 }
 
-CiProjectsIndex.layout = {
+CiClustersIndex.layout = {
     breadcrumbs: [
         { title: 'Dashboard', href: dashboard() },
-        { title: 'CI projects', href: '/ci-projects' },
+        { title: 'CI clusters', href: '/ci-clusters' },
     ],
 };

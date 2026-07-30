@@ -13,11 +13,13 @@ class CiProjectController extends Controller
     public function index(): Response
     {
         $projects = CiProject::withCount('alumni')
+            ->with('cluster:id,name,code')
             ->orderBy('name')
             ->get();
 
         return Inertia::render('ci-projects/index', [
             'projects' => $projects,
+            'clusters' => \App\Models\CiCluster::orderBy('name')->get(['id', 'name', 'code']),
         ]);
     }
 

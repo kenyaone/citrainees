@@ -25,17 +25,25 @@ import type { Alumni, AlumniFilters, CiProject, Paginated, Skill } from '@/types
 import { ALUMNI_STATUS_OPTIONS } from '@/types/tracer';
 import { dashboard } from '@/routes';
 
+interface Cluster {
+    id: number;
+    name: string;
+    code: string;
+}
+
 interface Props {
     alumni: Paginated<Alumni>;
     projects: CiProject[];
+    clusters: Cluster[];
     counties: string[];
     skills: Skill[];
-    filters: AlumniFilters & { county?: string; skill_id?: number | string };
+    filters: AlumniFilters & { county?: string; skill_id?: number | string; cluster_id?: number | string };
 }
 
-export default function AlumniIndex({ alumni, projects, counties, skills, filters }: Props) {
+export default function AlumniIndex({ alumni, projects, clusters, counties, skills, filters }: Props) {
     const [q, setQ] = useState(filters.q ?? '');
     const [projectId, setProjectId] = useState(String(filters.project_id ?? 'all'));
+    const [clusterId, setClusterId] = useState(String(filters.cluster_id ?? 'all'));
     const [status, setStatus] = useState(String(filters.status ?? 'all'));
     const [cohort, setCohort] = useState(String(filters.cohort ?? ''));
     const [county, setCounty] = useState(String(filters.county ?? 'all'));
@@ -47,6 +55,7 @@ export default function AlumniIndex({ alumni, projects, counties, skills, filter
             {
                 q: q || undefined,
                 project_id: projectId !== 'all' ? projectId : undefined,
+                cluster_id: clusterId !== 'all' ? clusterId : undefined,
                 status: status !== 'all' ? status : undefined,
                 cohort: cohort || undefined,
                 county: county !== 'all' ? county : undefined,
@@ -59,6 +68,7 @@ export default function AlumniIndex({ alumni, projects, counties, skills, filter
     const resetFilters = () => {
         setQ('');
         setProjectId('all');
+        setClusterId('all');
         setStatus('all');
         setCohort('');
         setCounty('all');
@@ -107,6 +117,23 @@ export default function AlumniIndex({ alumni, projects, counties, skills, filter
                                     onChange={(e) => setQ(e.target.value)}
                                 />
                             </div>
+                        </div>
+
+                        <div className="min-w-[160px]">
+                            <label className="text-xs text-muted-foreground">Cluster</label>
+                            <Select value={clusterId} onValueChange={setClusterId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All clusters" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All clusters</SelectItem>
+                                    {clusters.map((c) => (
+                                        <SelectItem key={c.id} value={String(c.id)}>
+                                            {c.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="min-w-[180px]">

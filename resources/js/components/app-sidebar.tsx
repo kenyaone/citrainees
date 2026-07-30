@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, FolderGit2, LayoutGrid, ShieldCheck, User, Users } from 'lucide-react';
+import { Building2, FolderGit2, LayoutGrid, Network, ShieldCheck, User, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -20,6 +20,7 @@ const staffNavItems: NavItem[] = [
     { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
     { title: 'Alumni', href: '/alumni', icon: Users },
     { title: 'CI projects', href: '/ci-projects', icon: Building2 },
+    { title: 'CI clusters', href: '/ci-clusters', icon: Network },
     { title: 'Verifications', href: '/verifications', icon: ShieldCheck },
 ];
 

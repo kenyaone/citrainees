@@ -17,6 +17,7 @@ class StoreCiProjectRequest extends FormRequest
         $projectId = $this->route('ci_project')?->id;
 
         return [
+            'ci_cluster_id' => ['nullable', 'exists:ci_clusters,id'],
             'code' => ['required', 'string', 'max:32', Rule::unique('ci_projects', 'code')->ignore($projectId)],
             'name' => ['required', 'string', 'max:255'],
             'county' => ['nullable', 'string', 'max:64'],

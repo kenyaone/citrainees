@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreAlumniRequest;
 use App\Http\Requests\UpdateAlumniRequest;
 use App\Models\Alumni;
+use App\Models\CiCluster;
 use App\Models\CiProject;
 use App\Models\Skill;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,7 @@ class AlumniController extends Controller
                 });
             })
             ->when($request->integer('project_id'), fn ($q, $id) => $q->where('ci_project_id', $id))
+            ->when($request->integer('cluster_id'), fn ($q, $id) => $q->whereHas('ciProject', fn ($pq) => $pq->where('ci_cluster_id', $id)))
             ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('current_status', $s))
             ->when($request->integer('cohort'), fn ($q, $y) => $q->where('form_four_year', $y))
             ->when($request->string('county')->toString(), fn ($q, $c) => $q->where('county', $c))
@@ -39,9 +41,10 @@ class AlumniController extends Controller
         return Inertia::render('alumni/index', [
             'alumni' => $alumni,
             'projects' => CiProject::orderBy('name')->get(['id', 'name', 'code']),
+            'clusters' => CiCluster::orderBy('name')->get(['id', 'name', 'code']),
             'counties' => array_keys(config('kenya_counties')),
             'skills' => Skill::orderBy('name')->get(['id', 'name', 'category']),
-            'filters' => $request->only(['q', 'project_id', 'status', 'cohort', 'county', 'skill_id']),
+            'filters' => $request->only(['q', 'project_id', 'cluster_id', 'status', 'cohort', 'county', 'skill_id']),
         ]);
     }
 

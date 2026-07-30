@@ -8,7 +8,12 @@ class CiProject extends Model
 {
     protected $table = 'ci_projects';
 
-    protected $fillable = ['code', 'name', 'county', 'sub_county', 'notes'];
+    protected $fillable = ['ci_cluster_id', 'code', 'name', 'county', 'sub_county', 'notes'];
+
+    public function cluster()
+    {
+        return $this->belongsTo(CiCluster::class, 'ci_cluster_id');
+    }
 
     public function alumni()
     {
