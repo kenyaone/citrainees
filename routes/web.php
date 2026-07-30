@@ -10,6 +10,7 @@ use App\Http\Controllers\EducationRecordController;
 use App\Http\Controllers\EmploymentRecordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SignupController;
+use App\Http\Controllers\VerificationController;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'welcome')->name('home');
@@ -55,6 +56,10 @@ Route::middleware(['auth', 'verified', 'staff'])->group(function () {
     Route::resource('ci-projects', CiProjectController::class)
         ->except(['create', 'show', 'edit'])
         ->parameters(['ci-projects' => 'ciProject']);
+
+    Route::get('verifications', [VerificationController::class, 'index'])->name('verifications.index');
+    Route::post('verifications/{verification}/approve', [VerificationController::class, 'approve'])->name('verifications.approve');
+    Route::post('verifications/{verification}/reject', [VerificationController::class, 'reject'])->name('verifications.reject');
 });
 
 require __DIR__.'/settings.php';

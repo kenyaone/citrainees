@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEducationRecordRequest;
 use App\Http\Requests\StoreEmploymentRecordRequest;
+use App\Models\Alumni;
 use App\Models\Skill;
+use App\Models\Verification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -46,20 +48,39 @@ class AlumniSelfController extends Controller
             'skill_ids.*' => ['integer', 'exists:skills,id'],
         ]);
 
-        $skillIds = $data['skill_ids'] ?? null;
+        $currentSkillIds = $alumni->skills->pluck('id')->sort()->values()->all();
+        $proposedSkillIds = collect($data['skill_ids'] ?? $currentSkillIds)
+            ->map(fn ($id) => (int) $id)
+            ->sort()
+            ->values()
+            ->all();
         unset($data['skill_ids']);
 
-        $alumni->update([
-            ...$data,
-            'verified_at' => null,
-            'verified_by' => null,
-        ]);
-
-        if ($skillIds !== null) {
-            $alumni->skills()->sync($skillIds);
+        $diff = [];
+        foreach ($data as $field => $newValue) {
+            $currentValue = $alumni->getAttribute($field);
+            if ((string) $currentValue !== (string) $newValue) {
+                $diff[$field] = ['from' => $currentValue, 'to' => $newValue];
+            }
+        }
+        if ($currentSkillIds !== $proposedSkillIds) {
+            $diff['skill_ids'] = ['from' => $currentSkillIds, 'to' => $proposedSkillIds];
         }
 
-        return back()->with('success', 'Profile updated. Staff will review the changes.');
+        if (empty($diff)) {
+            return back()->with('success', 'No changes to save.');
+        }
+
+        Verification::create([
+            'alumni_id' => $alumni->id,
+            'submitted_by' => $request->user()->id,
+            'subject_type' => Alumni::class,
+            'subject_id' => $alumni->id,
+            'proposed_changes' => $diff,
+            'status' => 'pending',
+        ]);
+
+        return back()->with('success', 'Changes submitted for review. Staff will approve them shortly.');
     }
 
     public function addEducation(StoreEducationRecordRequest $request): RedirectResponse

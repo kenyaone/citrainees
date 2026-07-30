@@ -53,6 +53,9 @@ class HandleInertiaRequests extends Middleware
                 'error' => fn () => $request->session()->get('error'),
                 'import_skipped' => fn () => $request->session()->get('import_skipped'),
             ],
+            'pending_verifications_count' => fn () => $request->user()?->isStaff()
+                ? \App\Models\Verification::where('status', 'pending')->count()
+                : 0,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }
