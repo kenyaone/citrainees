@@ -15,9 +15,10 @@ use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SignupController;
 use App\Http\Controllers\SkillVerificationRequestController;
 use App\Http\Controllers\VerificationController;
+use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+Route::get('/', WelcomeController::class)->name('home');
 
 Route::get('signup/{token}', [SignupController::class, 'show'])->name('signup.show');
 Route::post('signup/{token}', [SignupController::class, 'store'])->middleware('throttle:public-token')->name('signup.store');
