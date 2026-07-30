@@ -18,7 +18,8 @@ import {
 } from '@/components/ui/select';
 import Heading from '@/components/heading';
 import InputError from '@/components/input-error';
-import type { Alumni, EducationRecord, EmploymentRecord } from '@/types/tracer';
+import SkillsPicker from '@/components/skills-picker';
+import type { Alumni, EducationRecord, EmploymentRecord, Skill } from '@/types/tracer';
 import {
     ALUMNI_STATUS_OPTIONS,
     COMPLETION_STATUS_OPTIONS,
@@ -30,12 +31,14 @@ import {
 interface Props {
     alumni: Alumni;
     counties: Record<string, string[]>;
+    skills: Skill[];
 }
 
 const NONE = '__none__';
 
-export default function MyProfile({ alumni, counties }: Props) {
+export default function MyProfile({ alumni, counties, skills }: Props) {
     const countyNames = Object.keys(counties);
+    const [skillIds, setSkillIds] = useState<number[]>(alumni.skills?.map((s) => s.id) ?? []);
     const [values, setValues] = useState({
         phone_primary: alumni.phone_primary ?? '',
         email_secondary: alumni.email_secondary ?? '',
@@ -58,6 +61,7 @@ export default function MyProfile({ alumni, counties }: Props) {
             {
                 ...values,
                 current_status: values.current_status === NONE ? null : values.current_status,
+                skill_ids: skillIds,
             },
             {
                 onError: (errs) => setErrors(errs as Record<string, string>),
@@ -195,6 +199,18 @@ export default function MyProfile({ alumni, counties }: Props) {
                                     value={values.bio}
                                     onChange={(e) => setValues({ ...values, bio: e.target.value })}
                                     placeholder="A short paragraph about your skills, goals, or the work you're looking for."
+                                />
+                            </div>
+
+                            <div>
+                                <Label>My skills</Label>
+                                <p className="text-xs text-muted-foreground mb-2">
+                                    Tag the skills you have — employers use these to find you.
+                                </p>
+                                <SkillsPicker
+                                    allSkills={skills}
+                                    selectedIds={skillIds}
+                                    onChange={setSkillIds}
                                 />
                             </div>
                             <div className="flex items-start gap-2 border rounded-md p-3 bg-muted/30">

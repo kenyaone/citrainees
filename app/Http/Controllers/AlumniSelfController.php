@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEducationRecordRequest;
 use App\Http\Requests\StoreEmploymentRecordRequest;
+use App\Models\Skill;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,11 +20,13 @@ class AlumniSelfController extends Controller
             'ciProject:id,name,code',
             'educationRecords' => fn ($q) => $q->orderByDesc('end_year'),
             'employmentRecords' => fn ($q) => $q->orderByDesc('is_current')->orderByDesc('start_date'),
+            'skills:id,name,category',
         ]);
 
         return Inertia::render('my-profile', [
             'alumni' => $alumni,
             'counties' => config('kenya_counties'),
+            'skills' => Skill::orderBy('category')->orderBy('name')->get(['id', 'name', 'category']),
         ]);
     }
 
@@ -39,13 +42,22 @@ class AlumniSelfController extends Controller
             'county' => ['nullable', 'string', 'max:64', 'in:'.implode(',', array_keys(config('kenya_counties')))],
             'sub_county' => ['nullable', 'string', 'max:64'],
             'is_public' => ['sometimes', 'boolean'],
+            'skill_ids' => ['nullable', 'array'],
+            'skill_ids.*' => ['integer', 'exists:skills,id'],
         ]);
+
+        $skillIds = $data['skill_ids'] ?? null;
+        unset($data['skill_ids']);
 
         $alumni->update([
             ...$data,
             'verified_at' => null,
             'verified_by' => null,
         ]);
+
+        if ($skillIds !== null) {
+            $alumni->skills()->sync($skillIds);
+        }
 
         return back()->with('success', 'Profile updated. Staff will review the changes.');
     }

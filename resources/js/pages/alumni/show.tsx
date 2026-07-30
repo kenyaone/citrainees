@@ -436,6 +436,21 @@ export default function AlumniShow({ alumni }: Props) {
                     </Card>
                 )}
 
+                {alumni.skills && alumni.skills.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Skills</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-wrap gap-1">
+                            {alumni.skills.map((s) => (
+                                <Badge key={s.id} variant="secondary">
+                                    {s.name}
+                                </Badge>
+                            ))}
+                        </CardContent>
+                    </Card>
+                )}
+
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Post-secondary education</CardTitle>

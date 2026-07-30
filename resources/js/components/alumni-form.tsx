@@ -12,12 +12,14 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import InputError from '@/components/input-error';
-import { ALUMNI_STATUS_OPTIONS, Alumni, CiProject } from '@/types/tracer';
+import SkillsPicker from '@/components/skills-picker';
+import { ALUMNI_STATUS_OPTIONS, Alumni, CiProject, Skill } from '@/types/tracer';
 
 interface Props {
-    alumni?: Alumni | null;
+    alumni?: (Alumni & { skills?: Skill[] }) | null;
     projects: CiProject[];
     counties: Record<string, string[]>;
+    skills: Skill[];
     submitUrl: string;
     submitMethod: 'post' | 'put';
     cancelUrl: string;
@@ -33,8 +35,18 @@ const GENDER_OPTIONS = [
 
 const NONE = '__none__';
 
-export default function AlumniForm({ alumni, projects, counties, submitUrl, submitMethod, cancelUrl, submitLabel }: Props) {
+export default function AlumniForm({
+    alumni,
+    projects,
+    counties,
+    skills,
+    submitUrl,
+    submitMethod,
+    cancelUrl,
+    submitLabel,
+}: Props) {
     const countyNames = Object.keys(counties);
+    const [skillIds, setSkillIds] = useState<number[]>(alumni?.skills?.map((s) => s.id) ?? []);
     const [values, setValues] = useState({
         ci_project_id: alumni?.ci_project_id ? String(alumni.ci_project_id) : NONE,
         first_name: alumni?.first_name ?? '',
@@ -63,7 +75,7 @@ export default function AlumniForm({ alumni, projects, counties, submitUrl, subm
         e.preventDefault();
         setProcessing(true);
 
-        const payload: Record<string, string | number | null> = {};
+        const payload: Record<string, string | number | number[] | null> = {};
         Object.entries(values).forEach(([k, v]) => {
             if (v === '' || v === NONE) {
                 payload[k] = null;
@@ -73,6 +85,7 @@ export default function AlumniForm({ alumni, projects, counties, submitUrl, subm
                 payload[k] = v;
             }
         });
+        payload.skill_ids = skillIds;
 
         router[submitMethod](submitUrl, payload, {
             onError: (errs) => setErrors(errs as Record<string, string>),
@@ -284,6 +297,12 @@ export default function AlumniForm({ alumni, projects, counties, submitUrl, subm
                 <Label>Bio</Label>
                 <Textarea rows={4} value={values.bio} onChange={(e) => set('bio', e.target.value)} />
                 <InputError message={errors.bio} />
+            </div>
+
+            <div>
+                <Label>Skills</Label>
+                <SkillsPicker allSkills={skills} selectedIds={skillIds} onChange={setSkillIds} />
+                <InputError message={errors.skill_ids} />
             </div>
 
             <div className="flex gap-2 justify-end">

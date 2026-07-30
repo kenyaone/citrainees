@@ -21,7 +21,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import Heading from '@/components/heading';
-import type { Alumni, AlumniFilters, CiProject, Paginated } from '@/types/tracer';
+import type { Alumni, AlumniFilters, CiProject, Paginated, Skill } from '@/types/tracer';
 import { ALUMNI_STATUS_OPTIONS } from '@/types/tracer';
 import { dashboard } from '@/routes';
 
@@ -29,15 +29,17 @@ interface Props {
     alumni: Paginated<Alumni>;
     projects: CiProject[];
     counties: string[];
-    filters: AlumniFilters & { county?: string };
+    skills: Skill[];
+    filters: AlumniFilters & { county?: string; skill_id?: number | string };
 }
 
-export default function AlumniIndex({ alumni, projects, counties, filters }: Props) {
+export default function AlumniIndex({ alumni, projects, counties, skills, filters }: Props) {
     const [q, setQ] = useState(filters.q ?? '');
     const [projectId, setProjectId] = useState(String(filters.project_id ?? 'all'));
     const [status, setStatus] = useState(String(filters.status ?? 'all'));
     const [cohort, setCohort] = useState(String(filters.cohort ?? ''));
     const [county, setCounty] = useState(String(filters.county ?? 'all'));
+    const [skillId, setSkillId] = useState(String(filters.skill_id ?? 'all'));
 
     const applyFilters = () => {
         router.get(
@@ -48,6 +50,7 @@ export default function AlumniIndex({ alumni, projects, counties, filters }: Pro
                 status: status !== 'all' ? status : undefined,
                 cohort: cohort || undefined,
                 county: county !== 'all' ? county : undefined,
+                skill_id: skillId !== 'all' ? skillId : undefined,
             },
             { preserveState: true, preserveScroll: true, replace: true },
         );
@@ -59,6 +62,7 @@ export default function AlumniIndex({ alumni, projects, counties, filters }: Pro
         setStatus('all');
         setCohort('');
         setCounty('all');
+        setSkillId('all');
         router.get('/alumni', {}, { preserveState: true, preserveScroll: true, replace: true });
     };
 
@@ -164,6 +168,23 @@ export default function AlumniIndex({ alumni, projects, counties, filters }: Pro
                                 value={cohort}
                                 onChange={(e) => setCohort(e.target.value)}
                             />
+                        </div>
+
+                        <div className="min-w-[180px]">
+                            <label className="text-xs text-muted-foreground">Skill</label>
+                            <Select value={skillId} onValueChange={setSkillId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Any skill" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Any skill</SelectItem>
+                                    {skills.map((s) => (
+                                        <SelectItem key={s.id} value={String(s.id)}>
+                                            {s.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="flex gap-2">

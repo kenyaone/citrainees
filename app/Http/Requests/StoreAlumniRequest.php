@@ -33,6 +33,8 @@ class StoreAlumniRequest extends FormRequest
             'bio' => ['nullable', 'string', 'max:2000'],
             'phone_primary' => ['nullable', 'string', 'max:32'],
             'email_secondary' => ['nullable', 'email', 'max:255'],
+            'skill_ids' => ['nullable', 'array'],
+            'skill_ids.*' => ['integer', 'exists:skills,id'],
         ];
     }
 }
