@@ -12,6 +12,9 @@ class EmploymentRecord extends Model
         'start_date', 'end_date', 'is_current',
         'description', 'is_public',
         'verified_at', 'verified_by',
+        'confirmation_token', 'confirmation_token_expires_at',
+        'confirmed_at', 'confirmer_name', 'confirmer_email', 'confirmer_role',
+        'confirmer_notes', 'confirmed_skill_ids',
     ];
 
     protected function casts(): array
@@ -22,6 +25,9 @@ class EmploymentRecord extends Model
             'is_current' => 'boolean',
             'is_public' => 'boolean',
             'verified_at' => 'datetime',
+            'confirmation_token_expires_at' => 'datetime',
+            'confirmed_at' => 'datetime',
+            'confirmed_skill_ids' => 'array',
         ];
     }
 

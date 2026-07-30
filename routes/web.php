@@ -9,6 +9,7 @@ use App\Http\Controllers\CiClusterController;
 use App\Http\Controllers\CiProjectController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EducationRecordController;
+use App\Http\Controllers\EmploymentConfirmationController;
 use App\Http\Controllers\EmploymentRecordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SignupController;
@@ -21,6 +22,10 @@ Route::inertia('/', 'welcome')->name('home');
 Route::get('signup/{token}', [SignupController::class, 'show'])->name('signup.show');
 Route::post('signup/{token}', [SignupController::class, 'store'])->name('signup.store');
 
+Route::get('confirm-employment/{token}', [EmploymentConfirmationController::class, 'show'])->name('employment-confirm.show');
+Route::post('confirm-employment/{token}', [EmploymentConfirmationController::class, 'store'])->name('employment-confirm.store');
+Route::get('confirm-employment-thanks', [EmploymentConfirmationController::class, 'thanks'])->name('employment-confirm.thanks');
+
 Route::middleware(['auth'])->group(function () {
     Route::get('home', HomeController::class)->name('home.redirect');
 });
@@ -30,6 +35,8 @@ Route::middleware(['auth', 'verified', 'alumni'])->group(function () {
     Route::patch('my-profile', [AlumniSelfController::class, 'update'])->name('my-profile.update');
     Route::post('my-profile/education', [AlumniSelfController::class, 'addEducation'])->name('my-profile.education.store');
     Route::post('my-profile/employment', [AlumniSelfController::class, 'addEmployment'])->name('my-profile.employment.store');
+    Route::post('my-profile/employment/{employmentRecord}/issue-token', [EmploymentConfirmationController::class, 'issue'])->name('my-profile.employment.issue-token');
+    Route::post('my-profile/employment/{employmentRecord}/regenerate-token', [EmploymentConfirmationController::class, 'regenerate'])->name('my-profile.employment.regenerate-token');
 
     Route::get('assessments', [AlumniAssessmentController::class, 'index'])->name('assessments.index');
     Route::post('assessments/{assessment}/start', [AlumniAssessmentController::class, 'start'])->name('assessments.start');
@@ -63,6 +70,8 @@ Route::middleware(['auth', 'verified', 'staff'])->group(function () {
         ->name('alumni.employment.store');
     Route::delete('alumni/{alumni}/employment/{employmentRecord}', [EmploymentRecordController::class, 'destroy'])
         ->name('alumni.employment.destroy');
+    Route::post('alumni/{alumni}/employment/{employmentRecord}/issue-token', [EmploymentConfirmationController::class, 'issue'])->name('alumni.employment.issue-token');
+    Route::post('alumni/{alumni}/employment/{employmentRecord}/regenerate-token', [EmploymentConfirmationController::class, 'regenerate'])->name('alumni.employment.regenerate-token');
 
     Route::resource('ci-projects', CiProjectController::class)
         ->except(['create', 'show', 'edit'])

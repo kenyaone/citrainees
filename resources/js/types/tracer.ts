@@ -73,6 +73,12 @@ export interface EmploymentRecord {
     is_public: boolean;
     verified_at: string | null;
     created_at: string;
+    confirmation_token?: string | null;
+    confirmation_token_expires_at?: string | null;
+    confirmed_at?: string | null;
+    confirmer_name?: string | null;
+    confirmer_role?: string | null;
+    confirmer_notes?: string | null;
 }
 
 export interface Skill {

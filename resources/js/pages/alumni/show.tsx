@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import { CheckCircle2, Pencil, Plus, Send, ShieldCheck, Trash2 } from 'lucide-react';
+import EmployerConfirmationDialog from '@/components/employer-confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -314,6 +315,78 @@ function EmploymentForm({ alumniId, onDone }: { alumniId: number; onDone: () => 
     );
 }
 
+function StaffEmploymentRow({
+    rec,
+    alumniId,
+    alumniFirstName,
+    onRemove,
+}: {
+    rec: EmploymentRecord;
+    alumniId: number;
+    alumniFirstName: string;
+    onRemove: (rec: EmploymentRecord) => void;
+}) {
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const confirmed = !!rec.confirmed_at;
+
+    return (
+        <div className="flex items-start justify-between border rounded-md p-3">
+            <div className="flex-1">
+                <div className="flex items-start justify-between gap-2">
+                    <div className="font-medium">
+                        {rec.role_title} — {rec.employer_name}
+                    </div>
+                    {confirmed && (
+                        <Badge className="bg-emerald-600 hover:bg-emerald-700 gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Verified by employer
+                        </Badge>
+                    )}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                    {rec.sector ?? 'Sector n/a'} · {rec.county ?? '—'} ·{' '}
+                    {rec.start_date ?? '?'} –{' '}
+                    {rec.is_current ? 'present' : rec.end_date ?? 'ended'}
+                </div>
+                <div className="mt-1 flex gap-2">
+                    {rec.employment_type && (
+                        <Badge variant="outline">{rec.employment_type.replace('_', ' ')}</Badge>
+                    )}
+                    {rec.is_current && <Badge>Current</Badge>}
+                </div>
+                {rec.description && <div className="mt-2 text-sm">{rec.description}</div>}
+                {confirmed && rec.confirmer_name && (
+                    <div className="mt-2 text-xs text-emerald-700 dark:text-emerald-400">
+                        Confirmed by {rec.confirmer_name}
+                        {rec.confirmer_role && `, ${rec.confirmer_role}`}
+                        {rec.confirmed_at && ` on ${new Date(rec.confirmed_at).toLocaleDateString()}`}
+                    </div>
+                )}
+                {!confirmed && (
+                    <div className="mt-2">
+                        <Button variant="outline" size="sm" onClick={() => setDialogOpen(true)}>
+                            <ShieldCheck className="mr-1 h-4 w-4" />
+                            Request employer confirmation
+                        </Button>
+                    </div>
+                )}
+            </div>
+            <Button variant="ghost" size="icon" onClick={() => onRemove(rec)} aria-label="Remove">
+                <Trash2 className="h-4 w-4" />
+            </Button>
+
+            <EmployerConfirmationDialog
+                record={rec}
+                tokenIssueUrl={`/alumni/${alumniId}/employment/${rec.id}/issue-token`}
+                tokenRegenerateUrl={`/alumni/${alumniId}/employment/${rec.id}/regenerate-token`}
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                alumniFirstName={alumniFirstName}
+            />
+        </div>
+    );
+}
+
 export default function AlumniShow({ alumni }: Props) {
     const [showEduForm, setShowEduForm] = useState(false);
     const [showEmpForm, setShowEmpForm] = useState(false);
@@ -525,37 +598,13 @@ export default function AlumniShow({ alumni }: Props) {
                         {alumni.employment_records && alumni.employment_records.length > 0 ? (
                             <div className="space-y-3">
                                 {alumni.employment_records.map((rec) => (
-                                    <div key={rec.id} className="flex items-start justify-between border rounded-md p-3">
-                                        <div>
-                                            <div className="font-medium">
-                                                {rec.role_title} — {rec.employer_name}
-                                            </div>
-                                            <div className="text-sm text-muted-foreground">
-                                                {rec.sector ?? 'Sector n/a'} · {rec.county ?? '—'} ·{' '}
-                                                {rec.start_date ?? '?'} –{' '}
-                                                {rec.is_current ? 'present' : rec.end_date ?? 'ended'}
-                                            </div>
-                                            <div className="mt-1 flex gap-2">
-                                                {rec.employment_type && (
-                                                    <Badge variant="outline">
-                                                        {rec.employment_type.replace('_', ' ')}
-                                                    </Badge>
-                                                )}
-                                                {rec.is_current && <Badge>Current</Badge>}
-                                            </div>
-                                            {rec.description && (
-                                                <div className="mt-2 text-sm">{rec.description}</div>
-                                            )}
-                                        </div>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => removeEmp(rec)}
-                                            aria-label="Remove"
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
+                                    <StaffEmploymentRow
+                                        key={rec.id}
+                                        rec={rec}
+                                        alumniId={alumni.id}
+                                        alumniFirstName={alumni.first_name}
+                                        onRemove={removeEmp}
+                                    />
                                 ))}
                             </div>
                         ) : (

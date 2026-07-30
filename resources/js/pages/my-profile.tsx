@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import { Award, CheckCircle2, Plus } from 'lucide-react';
+import { Award, CheckCircle2, Plus, ShieldCheck } from 'lucide-react';
+import EmployerConfirmationDialog from '@/components/employer-confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -295,7 +296,13 @@ export default function MyProfile({ alumni, counties, skills }: Props) {
                     <CardContent className="space-y-4">
                         {showEmp && <SelfEmploymentForm onDone={() => setShowEmp(false)} />}
                         {alumni.employment_records && alumni.employment_records.length > 0 ? (
-                            alumni.employment_records.map((rec) => <EmploymentCard key={rec.id} rec={rec} />)
+                            alumni.employment_records.map((rec) => (
+                                <EmploymentCard
+                                    key={rec.id}
+                                    rec={rec}
+                                    alumniFirstName={alumni.first_name}
+                                />
+                            ))
                         ) : (
                             !showEmp && (
                                 <p className="text-sm text-muted-foreground">
@@ -330,15 +337,33 @@ function EducationCard({ rec }: { rec: EducationRecord }) {
     );
 }
 
-function EmploymentCard({ rec }: { rec: EmploymentRecord }) {
+function EmploymentCard({ rec, alumniFirstName }: { rec: EmploymentRecord; alumniFirstName: string }) {
+    const [open, setOpen] = useState(false);
+    const confirmed = !!rec.confirmed_at;
+
     return (
         <div className="border rounded-md p-3">
-            <div className="font-medium">
-                {rec.role_title} — {rec.employer_name}
-            </div>
-            <div className="text-sm text-muted-foreground">
-                {rec.sector ?? 'Sector n/a'} · {rec.county ?? '—'} · {rec.start_date ?? '?'} –{' '}
-                {rec.is_current ? 'present' : rec.end_date ?? 'ended'}
+            <div className="flex items-start justify-between gap-2">
+                <div>
+                    <div className="font-medium">
+                        {rec.role_title} — {rec.employer_name}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                        {rec.sector ?? 'Sector n/a'} · {rec.county ?? '—'} · {rec.start_date ?? '?'} –{' '}
+                        {rec.is_current ? 'present' : rec.end_date ?? 'ended'}
+                    </div>
+                </div>
+                {confirmed ? (
+                    <Badge className="bg-emerald-600 hover:bg-emerald-700 gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Verified by employer
+                    </Badge>
+                ) : (
+                    <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+                        <ShieldCheck className="mr-1 h-4 w-4" />
+                        Request confirmation
+                    </Button>
+                )}
             </div>
             <div className="mt-1 flex gap-2">
                 {rec.employment_type && (
@@ -347,6 +372,22 @@ function EmploymentCard({ rec }: { rec: EmploymentRecord }) {
                 {rec.is_current && <Badge>Current</Badge>}
             </div>
             {rec.description && <div className="mt-2 text-sm">{rec.description}</div>}
+            {confirmed && rec.confirmer_name && (
+                <div className="mt-2 text-xs text-emerald-700 dark:text-emerald-400">
+                    Confirmed by {rec.confirmer_name}
+                    {rec.confirmer_role && `, ${rec.confirmer_role}`}
+                    {rec.confirmed_at && ` on ${new Date(rec.confirmed_at).toLocaleDateString()}`}
+                </div>
+            )}
+
+            <EmployerConfirmationDialog
+                record={rec}
+                tokenIssueUrl={`/my-profile/employment/${rec.id}/issue-token`}
+                tokenRegenerateUrl={`/my-profile/employment/${rec.id}/regenerate-token`}
+                open={open}
+                onOpenChange={setOpen}
+                alumniFirstName={alumniFirstName}
+            />
         </div>
     );
 }
