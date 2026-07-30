@@ -28,14 +28,16 @@ import { dashboard } from '@/routes';
 interface Props {
     alumni: Paginated<Alumni>;
     projects: CiProject[];
-    filters: AlumniFilters;
+    counties: string[];
+    filters: AlumniFilters & { county?: string };
 }
 
-export default function AlumniIndex({ alumni, projects, filters }: Props) {
+export default function AlumniIndex({ alumni, projects, counties, filters }: Props) {
     const [q, setQ] = useState(filters.q ?? '');
     const [projectId, setProjectId] = useState(String(filters.project_id ?? 'all'));
     const [status, setStatus] = useState(String(filters.status ?? 'all'));
     const [cohort, setCohort] = useState(String(filters.cohort ?? ''));
+    const [county, setCounty] = useState(String(filters.county ?? 'all'));
 
     const applyFilters = () => {
         router.get(
@@ -45,6 +47,7 @@ export default function AlumniIndex({ alumni, projects, filters }: Props) {
                 project_id: projectId !== 'all' ? projectId : undefined,
                 status: status !== 'all' ? status : undefined,
                 cohort: cohort || undefined,
+                county: county !== 'all' ? county : undefined,
             },
             { preserveState: true, preserveScroll: true, replace: true },
         );
@@ -55,6 +58,7 @@ export default function AlumniIndex({ alumni, projects, filters }: Props) {
         setProjectId('all');
         setStatus('all');
         setCohort('');
+        setCounty('all');
         router.get('/alumni', {}, { preserveState: true, preserveScroll: true, replace: true });
     };
 
@@ -129,6 +133,23 @@ export default function AlumniIndex({ alumni, projects, filters }: Props) {
                                     {ALUMNI_STATUS_OPTIONS.map((o) => (
                                         <SelectItem key={o.value} value={o.value}>
                                             {o.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="min-w-[160px]">
+                            <label className="text-xs text-muted-foreground">County</label>
+                            <Select value={county} onValueChange={setCounty}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Any county" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Any county</SelectItem>
+                                    {counties.map((c) => (
+                                        <SelectItem key={c} value={c}>
+                                            {c}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

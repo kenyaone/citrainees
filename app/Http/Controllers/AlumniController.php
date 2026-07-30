@@ -28,6 +28,7 @@ class AlumniController extends Controller
             ->when($request->integer('project_id'), fn ($q, $id) => $q->where('ci_project_id', $id))
             ->when($request->string('status')->toString(), fn ($q, $s) => $q->where('current_status', $s))
             ->when($request->integer('cohort'), fn ($q, $y) => $q->where('form_four_year', $y))
+            ->when($request->string('county')->toString(), fn ($q, $c) => $q->where('county', $c))
             ->orderByDesc('created_at');
 
         $alumni = $query->paginate(20)->withQueryString();
@@ -35,7 +36,8 @@ class AlumniController extends Controller
         return Inertia::render('alumni/index', [
             'alumni' => $alumni,
             'projects' => CiProject::orderBy('name')->get(['id', 'name', 'code']),
-            'filters' => $request->only(['q', 'project_id', 'status', 'cohort']),
+            'counties' => array_keys(config('kenya_counties')),
+            'filters' => $request->only(['q', 'project_id', 'status', 'cohort', 'county']),
         ]);
     }
 
@@ -43,6 +45,7 @@ class AlumniController extends Controller
     {
         return Inertia::render('alumni/create', [
             'projects' => CiProject::orderBy('name')->get(['id', 'name', 'code']),
+            'counties' => config('kenya_counties'),
         ]);
     }
 
@@ -75,6 +78,7 @@ class AlumniController extends Controller
         return Inertia::render('alumni/edit', [
             'alumni' => $alumni,
             'projects' => CiProject::orderBy('name')->get(['id', 'name', 'code']),
+            'counties' => config('kenya_counties'),
         ]);
     }
 

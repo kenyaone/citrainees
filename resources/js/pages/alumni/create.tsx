@@ -7,9 +7,10 @@ import { dashboard } from '@/routes';
 
 interface Props {
     projects: CiProject[];
+    counties: Record<string, string[]>;
 }
 
-export default function AlumniCreate({ projects }: Props) {
+export default function AlumniCreate({ projects, counties }: Props) {
     return (
         <>
             <Head title="Add alumnus" />
@@ -18,6 +19,7 @@ export default function AlumniCreate({ projects }: Props) {
                 <Card className="p-6">
                     <AlumniForm
                         projects={projects}
+                        counties={counties}
                         submitUrl="/alumni"
                         submitMethod="post"
                         cancelUrl="/alumni"

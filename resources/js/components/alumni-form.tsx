@@ -17,6 +17,7 @@ import { ALUMNI_STATUS_OPTIONS, Alumni, CiProject } from '@/types/tracer';
 interface Props {
     alumni?: Alumni | null;
     projects: CiProject[];
+    counties: Record<string, string[]>;
     submitUrl: string;
     submitMethod: 'post' | 'put';
     cancelUrl: string;
@@ -32,7 +33,8 @@ const GENDER_OPTIONS = [
 
 const NONE = '__none__';
 
-export default function AlumniForm({ alumni, projects, submitUrl, submitMethod, cancelUrl, submitLabel }: Props) {
+export default function AlumniForm({ alumni, projects, counties, submitUrl, submitMethod, cancelUrl, submitLabel }: Props) {
+    const countyNames = Object.keys(counties);
     const [values, setValues] = useState({
         ci_project_id: alumni?.ci_project_id ? String(alumni.ci_project_id) : NONE,
         first_name: alumni?.first_name ?? '',
@@ -164,12 +166,49 @@ export default function AlumniForm({ alumni, projects, submitUrl, submitMethod, 
                 </div>
                 <div>
                     <Label>County</Label>
-                    <Input value={values.county} onChange={(e) => set('county', e.target.value)} />
+                    <Select
+                        value={values.county || NONE}
+                        onValueChange={(v) => {
+                            setValues((prev) => ({
+                                ...prev,
+                                county: v === NONE ? '' : v,
+                                sub_county: '',
+                            }));
+                        }}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder="Select county" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={NONE}>—</SelectItem>
+                            {countyNames.map((c) => (
+                                <SelectItem key={c} value={c}>
+                                    {c}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <InputError message={errors.county} />
                 </div>
                 <div>
                     <Label>Sub-county</Label>
-                    <Input value={values.sub_county} onChange={(e) => set('sub_county', e.target.value)} />
+                    <Select
+                        value={values.sub_county || NONE}
+                        onValueChange={(v) => set('sub_county', v === NONE ? '' : v)}
+                        disabled={!values.county}
+                    >
+                        <SelectTrigger>
+                            <SelectValue placeholder={values.county ? 'Select sub-county' : 'Pick county first'} />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={NONE}>—</SelectItem>
+                            {(counties[values.county] ?? []).map((s) => (
+                                <SelectItem key={s} value={s}>
+                                    {s}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                     <InputError message={errors.sub_county} />
                 </div>
             </section>

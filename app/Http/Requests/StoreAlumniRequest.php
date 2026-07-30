@@ -22,7 +22,7 @@ class StoreAlumniRequest extends FormRequest
             'last_name' => ['required', 'string', 'max:100'],
             'date_of_birth' => ['nullable', 'date', 'before:today'],
             'gender' => ['nullable', 'in:female,male,other,prefer_not_to_say'],
-            'county' => ['nullable', 'string', 'max:64'],
+            'county' => ['nullable', 'string', 'max:64', 'in:'.implode(',', array_keys(config('kenya_counties')))],
             'sub_county' => ['nullable', 'string', 'max:64'],
             'sponsorship_start_year' => ['nullable', 'integer', 'min:1980', 'max:'.$currentYear],
             'sponsorship_end_year' => ['nullable', 'integer', 'min:1980', 'max:'.($currentYear + 5)],

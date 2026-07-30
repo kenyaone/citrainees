@@ -8,9 +8,10 @@ import { dashboard } from '@/routes';
 interface Props {
     alumni: Alumni;
     projects: CiProject[];
+    counties: Record<string, string[]>;
 }
 
-export default function AlumniEdit({ alumni, projects }: Props) {
+export default function AlumniEdit({ alumni, projects, counties }: Props) {
     return (
         <>
             <Head title={`Edit ${alumni.first_name} ${alumni.last_name}`} />
@@ -23,6 +24,7 @@ export default function AlumniEdit({ alumni, projects }: Props) {
                     <AlumniForm
                         alumni={alumni}
                         projects={projects}
+                        counties={counties}
                         submitUrl={`/alumni/${alumni.id}`}
                         submitMethod="put"
                         cancelUrl={`/alumni/${alumni.id}`}

@@ -23,6 +23,7 @@ class AlumniSelfController extends Controller
 
         return Inertia::render('my-profile', [
             'alumni' => $alumni,
+            'counties' => config('kenya_counties'),
         ]);
     }
 
@@ -35,7 +36,7 @@ class AlumniSelfController extends Controller
             'email_secondary' => ['nullable', 'email', 'max:255'],
             'current_status' => ['nullable', 'in:studying,employed,self_employed,unemployed,seeking,unknown'],
             'bio' => ['nullable', 'string', 'max:2000'],
-            'county' => ['nullable', 'string', 'max:64'],
+            'county' => ['nullable', 'string', 'max:64', 'in:'.implode(',', array_keys(config('kenya_counties')))],
             'sub_county' => ['nullable', 'string', 'max:64'],
             'is_public' => ['sometimes', 'boolean'],
         ]);
