@@ -113,45 +113,32 @@ class AlumniSelfController extends Controller
 
         $skillsChanged = $currentSkillIds !== $proposedSkillIds;
 
-        // Apply skill tagging immediately — it's a self-declared claim that only
-        // becomes trusted once verified via quiz / certificate / employer / practical.
-        // Waiting on staff review here blocks alumni from starting an assessment.
         if ($skillsChanged) {
             $alumni->skills()->sync(
                 array_fill_keys($proposedSkillIds, ['proficiency' => null])
             );
         }
 
-        $diff = [];
+        // Apply all profile field changes directly — the verification queue was
+        // overkill friction for personal preferences (opt-in toggle, language,
+        // contact details, current status). Alumni just want their edits to save.
+        $fieldsChanged = false;
         foreach ($data as $field => $newValue) {
-            $currentValue = $alumni->getAttribute($field);
-            if ((string) $currentValue !== (string) $newValue) {
-                $diff[$field] = ['from' => $currentValue, 'to' => $newValue];
+            if ((string) $alumni->getAttribute($field) !== (string) $newValue) {
+                $fieldsChanged = true;
+                break;
             }
         }
 
-        if (empty($diff)) {
-            return back()->with(
-                'success',
-                $skillsChanged ? 'Skills updated.' : 'No changes to save.',
-            );
+        if ($fieldsChanged) {
+            $alumni->update($data);
         }
 
-        Verification::create([
-            'alumni_id' => $alumni->id,
-            'submitted_by' => $request->user()->id,
-            'subject_type' => Alumni::class,
-            'subject_id' => $alumni->id,
-            'proposed_changes' => $diff,
-            'status' => 'pending',
-        ]);
+        if (! $skillsChanged && ! $fieldsChanged) {
+            return back()->with('success', 'No changes to save.');
+        }
 
-        return back()->with(
-            'success',
-            $skillsChanged
-                ? 'Skills updated. Other changes submitted for review — staff will approve them shortly.'
-                : 'Changes submitted for review. Staff will approve them shortly.',
-        );
+        return back()->with('success', 'Profile updated.');
     }
 
     public function addEducation(StoreEducationRecordRequest $request): RedirectResponse
