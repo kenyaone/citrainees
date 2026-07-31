@@ -220,7 +220,7 @@ class AlumniAssessmentController extends Controller
         DB::transaction(function () use ($attempt, $score, $maxScore, $passed, $normalizedAnswers, $submittedAt, $alumni) {
             $attempt->update([
                 'submitted_at' => $submittedAt,
-                'duration_seconds' => $submittedAt->diffInSeconds($attempt->started_at),
+                'duration_seconds' => (int) abs($submittedAt->diffInSeconds($attempt->started_at)),
                 'score' => $score,
                 'max_score' => $maxScore,
                 'passed' => $passed,

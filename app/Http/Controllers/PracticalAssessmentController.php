@@ -168,7 +168,7 @@ class PracticalAssessmentController extends Controller
         DB::transaction(function () use ($attempt, $data, $graded, $passed, $submittedAt) {
             $attempt->update([
                 'submitted_at' => $submittedAt,
-                'duration_seconds' => $submittedAt->diffInSeconds($attempt->started_at),
+                'duration_seconds' => (int) abs($submittedAt->diffInSeconds($attempt->started_at)),
                 'score' => $graded['score'],
                 'max_score' => 100,
                 'passed' => $passed,
