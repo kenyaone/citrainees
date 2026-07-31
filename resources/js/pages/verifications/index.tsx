@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import { Award, Check, Clock, FileText, User, X } from 'lucide-react';
+import { Award, Check, Clock, FileText, Mic, Sparkles, User, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -62,13 +62,39 @@ interface SkillVerification {
 
 type Counts = { pending: number; approved: number; rejected: number };
 
+interface PracticalAttempt {
+    id: number;
+    alumni_id: number;
+    submitted_at: string;
+    score: number;
+    submission_text: string;
+    task_prompt: string;
+    ai_feedback: { feedback: Array<{ criterion: string; points: number; note: string }>; summary?: string } | null;
+    ai_generated_flag: 'low' | 'medium' | 'high' | null;
+    tab_switches: number;
+    voice_stream_url: string | null;
+    staff_decision: string | null;
+    staff_reviewed_at: string | null;
+    alumni: {
+        id: number;
+        first_name: string;
+        last_name: string;
+        ci_project: { name: string; code: string } | null;
+    };
+    assessment: {
+        skill: { id: number; name: string; category: string | null };
+    };
+    staff_reviewer: { id: number; name: string } | null;
+}
+
 interface Props {
-    tab: 'profile' | 'skills';
-    items: Paginated<ProfileVerification> | Paginated<SkillVerification>;
+    tab: 'profile' | 'skills' | 'practical';
+    items: Paginated<ProfileVerification> | Paginated<SkillVerification> | Paginated<PracticalAttempt>;
     status: string;
     counts: {
         profile: Counts;
         skills: Counts;
+        practical: Counts;
     };
 }
 
@@ -347,7 +373,8 @@ export default function VerificationsIndex({ tab, items, status, counts }: Props
         );
     };
 
-    const activeCounts = tab === 'skills' ? counts.skills : counts.profile;
+    const activeCounts =
+        tab === 'skills' ? counts.skills : tab === 'practical' ? counts.practical : counts.profile;
     const total = activeCounts.pending + activeCounts.approved + activeCounts.rejected;
 
     return (
@@ -384,6 +411,18 @@ export default function VerificationsIndex({ tab, items, status, counts }: Props
                             </Badge>
                         )}
                     </Button>
+                    <Button
+                        variant={tab === 'practical' ? 'default' : 'ghost'}
+                        onClick={() => switchTab('practical')}
+                        size="sm"
+                    >
+                        <Sparkles className="mr-1 h-4 w-4" /> Practical tasks
+                        {counts.practical.pending > 0 && (
+                            <Badge variant="secondary" className="ml-2">
+                                {counts.practical.pending}
+                            </Badge>
+                        )}
+                    </Button>
                 </div>
 
                 <div className="flex gap-2">
@@ -415,16 +454,142 @@ export default function VerificationsIndex({ tab, items, status, counts }: Props
                         <CardContent className="py-8 text-center text-muted-foreground">
                             {total === 0
                                 ? 'Nothing here yet.'
-                                : `No ${tab === 'skills' ? 'certificates' : 'profile edits'} in this state.`}
+                                : `Nothing in this state.`}
                         </CardContent>
                     </Card>
                 ) : tab === 'skills' ? (
                     (items.data as SkillVerification[]).map((r) => <SkillCard key={r.id} r={r} />)
+                ) : tab === 'practical' ? (
+                    (items.data as PracticalAttempt[]).map((a) => <PracticalCard key={a.id} a={a} />)
                 ) : (
                     (items.data as ProfileVerification[]).map((v) => <ProfileCard key={v.id} v={v} />)
                 )}
             </div>
         </>
+    );
+}
+
+function PracticalCard({ a }: { a: PracticalAttempt }) {
+    const [notes, setNotes] = useState('');
+    const [processing, setProcessing] = useState(false);
+    const decide = (decision: 'approved' | 'rejected') => {
+        if (decision === 'rejected' && notes.trim().length < 5) {
+            alert('Add a short reviewer note for rejections.');
+            return;
+        }
+        setProcessing(true);
+        router.post(
+            `/practical-reviews/${a.id}/decide`,
+            { decision, reviewer_notes: notes || null },
+            { preserveScroll: true, onFinish: () => setProcessing(false) },
+        );
+    };
+    const flagColor =
+        a.ai_generated_flag === 'high'
+            ? 'bg-red-500/10 text-red-300 ring-red-500/30'
+            : a.ai_generated_flag === 'medium'
+              ? 'bg-amber-500/10 text-amber-300 ring-amber-500/30'
+              : 'bg-emerald-500/10 text-emerald-300 ring-emerald-500/30';
+    return (
+        <Card>
+            <CardHeader>
+                <div className="flex items-start justify-between gap-3">
+                    <div>
+                        <CardTitle className="text-base">
+                            {a.alumni.first_name} {a.alumni.last_name} — {a.assessment.skill.name}
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            {a.alumni.ci_project?.name ?? '—'} · submitted{' '}
+                            {new Date(a.submitted_at).toLocaleDateString()}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Badge className="text-sm">{a.score}/100</Badge>
+                        {a.ai_generated_flag && (
+                            <span
+                                className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${flagColor}`}
+                                title="AI likelihood assessment"
+                            >
+                                <Sparkles className="h-3 w-3" />
+                                AI risk: {a.ai_generated_flag}
+                            </span>
+                        )}
+                        {a.tab_switches > 0 && (
+                            <Badge variant="destructive">Tab switches: {a.tab_switches}</Badge>
+                        )}
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+                <details>
+                    <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">
+                        Task prompt
+                    </summary>
+                    <div className="mt-2 whitespace-pre-wrap text-xs bg-muted/40 p-3 rounded">
+                        {a.task_prompt}
+                    </div>
+                </details>
+                <div>
+                    <div className="text-xs font-semibold text-muted-foreground mb-1">Written submission</div>
+                    <div className="whitespace-pre-wrap bg-muted/40 p-3 rounded text-sm">
+                        {a.submission_text}
+                    </div>
+                </div>
+                {a.ai_feedback?.feedback && (
+                    <div>
+                        <div className="text-xs font-semibold text-muted-foreground mb-1">AI grading</div>
+                        <div className="space-y-1 text-xs">
+                            {a.ai_feedback.feedback.map((f, i) => (
+                                <div key={i} className="flex gap-2">
+                                    <span className="font-semibold w-10 text-right">{f.points}/20</span>
+                                    <span className="flex-1">
+                                        <span className="font-medium">{f.criterion}:</span> {f.note}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                {a.voice_stream_url && (
+                    <div>
+                        <div className="text-xs font-semibold text-muted-foreground mb-1 flex items-center gap-1">
+                            <Mic className="h-3 w-3" />
+                            Voice follow-up
+                        </div>
+                        <audio controls src={a.voice_stream_url} className="w-full" />
+                    </div>
+                )}
+                {a.staff_decision ? (
+                    <div className={`p-3 rounded text-xs ${a.staff_decision === 'approved' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400' : 'bg-red-500/10 text-red-700 dark:text-red-400'}`}>
+                        {a.staff_decision === 'approved' ? 'Approved' : 'Rejected'} by{' '}
+                        {a.staff_reviewer?.name ?? '—'} on{' '}
+                        {a.staff_reviewed_at && new Date(a.staff_reviewed_at).toLocaleDateString()}
+                    </div>
+                ) : (
+                    <div className="space-y-2 border-t pt-3">
+                        <Textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            placeholder="Reviewer notes (required for rejection)"
+                            rows={2}
+                        />
+                        <div className="flex gap-2 justify-end">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => decide('rejected')}
+                                disabled={processing}
+                            >
+                                <X className="mr-1 h-4 w-4" /> Reject
+                            </Button>
+                            <Button size="sm" onClick={() => decide('approved')} disabled={processing}>
+                                <Check className="mr-1 h-4 w-4" /> Approve &amp; verify
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </CardContent>
+        </Card>
     );
 }
 

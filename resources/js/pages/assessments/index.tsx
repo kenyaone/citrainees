@@ -192,7 +192,25 @@ function SkillCard({ skill }: { skill: SkillItem }) {
                             Not verified yet. Choose one of the paths below to prove this skill.
                         </div>
 
-                        <div className="grid gap-3 md:grid-cols-2">
+                        <div className="grid gap-3 md:grid-cols-3">
+                            {/* Practical path — AI-generated task */}
+                            <div className="border rounded-md p-3 space-y-2">
+                                <div className="text-sm font-medium">Practical task</div>
+                                <p className="text-xs text-muted-foreground">
+                                    AI-generated Kenya-context task, ~15 min, focused sitting required.
+                                    Best for informal or self-taught skills. Staff-reviewed.
+                                </p>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => router.post(`/practical-assessments/${skill.id}/start`)}
+                                    className="w-full"
+                                >
+                                    <Play className="mr-1 h-4 w-4" />
+                                    Start practical
+                                </Button>
+                            </div>
+
                             {/* Quiz path */}
                             <div className="border rounded-md p-3 space-y-2">
                                 <div className="text-sm font-medium">Take an assessment</div>

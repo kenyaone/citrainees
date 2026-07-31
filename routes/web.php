@@ -16,6 +16,7 @@ use App\Http\Controllers\EmploymentRecordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InviteRequestController;
 use App\Http\Controllers\JoinController;
+use App\Http\Controllers\PracticalAssessmentController;
 use App\Http\Controllers\SignupController;
 use App\Http\Controllers\SkillVerificationRequestController;
 use App\Http\Controllers\StaffController;
@@ -68,6 +69,14 @@ Route::middleware(['auth', 'verified', 'alumni'])->group(function () {
     Route::get('attempts/{attempt}/result', [AlumniAssessmentController::class, 'result'])->name('assessments.result');
 
     Route::post('skill-certificates', [SkillVerificationRequestController::class, 'store'])->middleware('throttle:uploads')->name('skill-certificates.store');
+
+    Route::post('practical-assessments/{skill}/start', [PracticalAssessmentController::class, 'start'])->name('practical.start');
+    Route::get('practical-attempts/{attempt}/take', [PracticalAssessmentController::class, 'take'])->name('practical.take');
+    Route::post('practical-attempts/{attempt}/submit', [PracticalAssessmentController::class, 'submit'])->name('practical.submit');
+    Route::post('practical-attempts/{attempt}/void', [PracticalAssessmentController::class, 'void'])->name('practical.void');
+    Route::get('practical-attempts/{attempt}/result', [PracticalAssessmentController::class, 'result'])->name('practical.result');
+    Route::post('practical-attempts/{attempt}/voice', [PracticalAssessmentController::class, 'uploadVoice'])->middleware('throttle:uploads')->name('practical.voice.store');
+    Route::delete('practical-attempts/{attempt}/voice', [PracticalAssessmentController::class, 'deleteVoice'])->name('practical.voice.destroy');
 });
 
 Route::middleware(['auth', 'verified', 'staff'])->group(function () {
@@ -111,6 +120,9 @@ Route::middleware(['auth', 'verified', 'staff'])->group(function () {
     Route::post('skill-verifications/{skillVerification}/approve', [SkillVerificationRequestController::class, 'approve'])->name('skill-verifications.approve');
     Route::post('skill-verifications/{skillVerification}/reject', [SkillVerificationRequestController::class, 'reject'])->name('skill-verifications.reject');
     Route::delete('skill-verifications/{skillVerification}', [SkillVerificationRequestController::class, 'destroy'])->name('skill-verifications.destroy');
+
+    Route::get('practical-attempts/{attempt}/voice-stream', [PracticalAssessmentController::class, 'streamVoice'])->name('practical.voice.stream');
+    Route::post('practical-reviews/{attempt}/decide', [VerificationController::class, 'decidePractical'])->name('practical.decide');
 });
 
 Route::middleware(['auth', 'verified', 'admin'])->group(function () {

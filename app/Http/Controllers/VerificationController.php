@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alumni;
+use App\Models\SkillAssessmentAttempt;
 use App\Models\SkillVerificationRequest;
 use App\Models\Verification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -36,6 +38,33 @@ class VerificationController extends Controller
                     ? Storage::url($r->evidence_path)
                     : null;
                 return $r;
+            });
+        } elseif ($tab === 'practical') {
+            $query = SkillAssessmentAttempt::query()
+                ->whereHas('assessment', fn ($q) => $q->where('type', 'practical'))
+                ->whereNotNull('submitted_at')
+                ->whereNull('voided_at')
+                ->where('passed', true)
+                ->with([
+                    'alumni:id,first_name,last_name,ci_project_id',
+                    'alumni.ciProject:id,name,code',
+                    'assessment.skill:id,name,category',
+                    'staffReviewer:id,name',
+                ]);
+            if ($status === 'pending') {
+                $query->whereNull('staff_decision');
+            } elseif ($status === 'approved') {
+                $query->where('staff_decision', 'approved');
+            } elseif ($status === 'rejected') {
+                $query->where('staff_decision', 'rejected');
+            }
+            $items = $query->orderByDesc('submitted_at')->paginate(20)->withQueryString();
+
+            $items->getCollection()->transform(function (SkillAssessmentAttempt $a) {
+                $a->voice_stream_url = $a->voice_path
+                    ? URL::signedRoute('practical.voice.stream', ['attempt' => $a->id], now()->addMinutes(5))
+                    : null;
+                return $a;
             });
         } else {
             $items = Verification::with([
@@ -65,8 +94,57 @@ class VerificationController extends Controller
                     'approved' => SkillVerificationRequest::where('status', 'approved')->count(),
                     'rejected' => SkillVerificationRequest::where('status', 'rejected')->count(),
                 ],
+                'practical' => [
+                    'pending' => SkillAssessmentAttempt::query()
+                        ->whereHas('assessment', fn ($q) => $q->where('type', 'practical'))
+                        ->whereNotNull('submitted_at')
+                        ->whereNull('voided_at')
+                        ->where('passed', true)
+                        ->whereNull('staff_decision')
+                        ->count(),
+                    'approved' => SkillAssessmentAttempt::query()
+                        ->whereHas('assessment', fn ($q) => $q->where('type', 'practical'))
+                        ->where('staff_decision', 'approved')->count(),
+                    'rejected' => SkillAssessmentAttempt::query()
+                        ->whereHas('assessment', fn ($q) => $q->where('type', 'practical'))
+                        ->where('staff_decision', 'rejected')->count(),
+                ],
             ],
         ]);
+    }
+
+    public function decidePractical(SkillAssessmentAttempt $attempt, Request $request): RedirectResponse
+    {
+        abort_unless($attempt->submitted_at !== null && $attempt->voided_at === null, 422);
+        abort_unless($attempt->passed, 422, 'Only passing attempts can be reviewed.');
+        abort_unless($attempt->staff_decision === null, 422, 'Already decided.');
+
+        $data = $request->validate([
+            'decision' => ['required', 'in:approved,rejected'],
+            'reviewer_notes' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        DB::transaction(function () use ($attempt, $data, $request) {
+            $attempt->update([
+                'staff_decision' => $data['decision'],
+                'staff_reviewed_at' => now(),
+                'staff_reviewer_id' => $request->user()->id,
+                'ai_feedback' => array_merge(
+                    is_array($attempt->ai_feedback) ? $attempt->ai_feedback : [],
+                    ['reviewer_notes' => $data['reviewer_notes'] ?? null],
+                ),
+            ]);
+
+            if ($data['decision'] === 'approved') {
+                $attempt->alumni->skills()->updateExistingPivot($attempt->assessment->skill_id, [
+                    'verified_at' => now(),
+                    'verified_via' => 'practical',
+                    'verified_by' => $request->user()->id,
+                ]);
+            }
+        });
+
+        return back()->with('success', 'Decision recorded.');
     }
 
     public function approve(Verification $verification, Request $request): RedirectResponse

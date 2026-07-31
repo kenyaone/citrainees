@@ -13,3 +13,8 @@ Schedule::command('tracer:backup')
     ->timezone('Africa/Nairobi')
     ->onOneServer()
     ->runInBackground();
+
+Schedule::command('tracer:prune-voice-notes')
+    ->dailyAt('03:00')
+    ->timezone('Africa/Nairobi')
+    ->onOneServer();
