@@ -152,12 +152,13 @@ function SkillCard({ skill }: { skill: SkillItem }) {
     const [certOpen, setCertOpen] = useState(false);
 
     const quiz = skill.quiz_path;
+    const hasQuiz = !!(quiz && quiz.question_count > 0);
     const pendingCert = skill.certificate_requests.find((r) => r.status === 'pending');
     const lastRejectedCert = skill.certificate_requests.find((r) => r.status === 'rejected');
 
     const startQuiz = () => {
-        if (!quiz) return;
-        router.post(`/assessments/${quiz.assessment_id}/start`);
+        if (!hasQuiz) return;
+        router.post(`/assessments/${quiz!.assessment_id}/start`);
     };
 
     return (
@@ -192,13 +193,13 @@ function SkillCard({ skill }: { skill: SkillItem }) {
                             Not verified yet. Choose one of the paths below to prove this skill.
                         </div>
 
-                        <div className="grid gap-3 md:grid-cols-3">
+                        <div className={`grid gap-3 ${hasQuiz ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
                             {/* Practical path — AI-generated task */}
                             <div className="border rounded-md p-3 space-y-2">
                                 <div className="text-sm font-medium">Practical task</div>
                                 <p className="text-xs text-muted-foreground">
                                     AI-generated Kenya-context task, ~15 min, focused sitting required.
-                                    Best for informal or self-taught skills. Staff-reviewed.
+                                    Works for any skill including informal ones. Staff-reviewed.
                                 </p>
                                 <Button
                                     size="sm"
@@ -211,49 +212,40 @@ function SkillCard({ skill }: { skill: SkillItem }) {
                                 </Button>
                             </div>
 
-                            {/* Quiz path */}
-                            <div className="border rounded-md p-3 space-y-2">
-                                <div className="text-sm font-medium">Take an assessment</div>
-                                {quiz ? (
-                                    <>
-                                        <p className="text-xs text-muted-foreground">
-                                            {quiz.question_count} questions · Pass ≥ {quiz.pass_threshold}%
-                                            {quiz.time_limit_minutes ? ` · ${quiz.time_limit_minutes} min` : ''}
-                                        </p>
-                                        {quiz.latest_attempt && (
-                                            <div className="text-xs">
-                                                Last attempt:{' '}
-                                                {quiz.latest_attempt.passed ? (
-                                                    <span className="text-emerald-700 dark:text-emerald-400">
-                                                        Passed ({quiz.latest_attempt.score}/
-                                                        {quiz.latest_attempt.max_score})
-                                                    </span>
-                                                ) : (
-                                                    <span className="text-red-600 dark:text-red-400">
-                                                        <XCircle className="inline h-3 w-3" /> Failed (
-                                                        {quiz.latest_attempt.score}/{quiz.latest_attempt.max_score})
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
-                                        {quiz.cooldown_until ? (
-                                            <div className="text-xs text-muted-foreground flex items-center gap-1">
-                                                <Clock className="h-3 w-3" /> Retry after{' '}
-                                                {new Date(quiz.cooldown_until).toLocaleDateString()}
-                                            </div>
-                                        ) : (
-                                            <Button size="sm" onClick={startQuiz} className="w-full">
-                                                <Play className="mr-1 h-4 w-4" />
-                                                {quiz.latest_attempt ? 'Retry' : 'Start'}
-                                            </Button>
-                                        )}
-                                    </>
-                                ) : (
-                                    <p className="text-xs text-muted-foreground italic">
-                                        No quiz available for this skill yet.
+                            {/* Quiz path — only shown when a pre-authored quiz exists */}
+                            {hasQuiz && (
+                                <div className="border rounded-md p-3 space-y-2">
+                                    <div className="text-sm font-medium">Take an assessment</div>
+                                    <p className="text-xs text-muted-foreground">
+                                        {quiz!.question_count} questions · Pass ≥ {quiz!.pass_threshold}%
+                                        {quiz!.time_limit_minutes ? ` · ${quiz!.time_limit_minutes} min` : ''}
                                     </p>
-                                )}
-                            </div>
+                                    {quiz!.latest_attempt && (
+                                        <div className="text-xs">
+                                            Last attempt:{' '}
+                                            {quiz!.latest_attempt.passed ? (
+                                                <span className="text-emerald-700 dark:text-emerald-400">
+                                                    Passed ({quiz!.latest_attempt.score}/{quiz!.latest_attempt.max_score})
+                                                </span>
+                                            ) : (
+                                                <span className="text-red-600 dark:text-red-400">
+                                                    <XCircle className="inline h-3 w-3" /> Failed ({quiz!.latest_attempt.score}/{quiz!.latest_attempt.max_score})
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                    {quiz!.cooldown_until ? (
+                                        <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                            <Clock className="h-3 w-3" /> Retry after {new Date(quiz!.cooldown_until).toLocaleDateString()}
+                                        </div>
+                                    ) : (
+                                        <Button size="sm" onClick={startQuiz} className="w-full">
+                                            <Play className="mr-1 h-4 w-4" />
+                                            {quiz!.latest_attempt ? 'Retry' : 'Start'}
+                                        </Button>
+                                    )}
+                                </div>
+                            )}
 
                             {/* Certificate path */}
                             <div className="border rounded-md p-3 space-y-2">
