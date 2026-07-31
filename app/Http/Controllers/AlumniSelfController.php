@@ -53,7 +53,7 @@ class AlumniSelfController extends Controller
         $employmentRecords = $alumni->employmentRecords ?? collect();
 
         $hasPhoto = ! empty($alumni->profile_photo_path);
-        $skillsTagged = $skills->count() >= 3;
+        $skillsTagged = $skills->count() >= 1;
         $hasVerifiedOrPendingSkillCert = $skills->contains(fn ($s) => (bool) $s->pivot?->verified_at)
             || $pendingSkillCerts->count() > 0
             || $educationRecords->contains(fn ($e) => ! empty($e->certificate_path));
@@ -68,7 +68,7 @@ class AlumniSelfController extends Controller
 
         $steps = [
             ['key' => 'photo', 'label' => 'Add a profile photo', 'done' => $hasPhoto, 'hint' => 'Use the camera button on your avatar.'],
-            ['key' => 'skills', 'label' => 'Tag at least 3 skills', 'done' => $skillsTagged, 'hint' => 'Employers filter by skill first.'],
+            ['key' => 'skills', 'label' => 'Tag at least one skill', 'done' => $skillsTagged, 'hint' => 'Employers filter by skill first — more skills = more chances to be found.'],
             ['key' => 'cert', 'label' => 'Upload one certificate', 'done' => $hasVerifiedOrPendingSkillCert, 'hint' => 'Skill or education — either counts.'],
             ['key' => 'education', 'label' => 'Add your education', 'done' => $hasEducation, 'hint' => 'TVET, college, or university.'],
         ];
