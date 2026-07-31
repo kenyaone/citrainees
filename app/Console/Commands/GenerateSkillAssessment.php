@@ -36,8 +36,12 @@ class GenerateSkillAssessment extends Command
         }
 
         $count = (int) $this->option('count');
-        $this->info("Generating {$count}-question quiz for '{$skill->name}' via Claude…");
-        $this->line("Model: ".config('assessments.ai.model'));
+        $provider = config('assessments.provider');
+        $model = $provider === 'anthropic'
+            ? config('assessments.anthropic.model')
+            : config('assessments.gemini.model');
+        $this->info("Generating {$count}-question quiz for '{$skill->name}'…");
+        $this->line("Provider: {$provider} · Model: {$model}");
 
         try {
             $drafts = $generator->generate($skill, $count);

@@ -3,52 +3,25 @@
 namespace App\Services;
 
 use App\Models\Skill;
-use Illuminate\Support\Facades\Http;
+use App\Services\Llm\LlmDriver;
 use RuntimeException;
 
 class AiQuizGenerator
 {
+    public function __construct(private readonly LlmDriver $llm) {}
+
     public function generate(Skill $skill, int $questionCount = 10): array
     {
         $this->guardRegulated($skill);
 
-        $apiKey = config('assessments.ai.api_key');
-        if (empty($apiKey)) {
-            throw new RuntimeException('ANTHROPIC_API_KEY is not set in .env. Cannot generate quiz drafts.');
-        }
-
-        $response = Http::withHeaders([
-            'x-api-key' => $apiKey,
-            'anthropic-version' => config('assessments.ai.api_version'),
-            'content-type' => 'application/json',
-        ])
-            ->timeout(config('assessments.ai.timeout_seconds'))
-            ->post(config('assessments.ai.endpoint'), [
-                'model' => config('assessments.ai.model'),
-                'max_tokens' => config('assessments.ai.max_tokens'),
-                'system' => $this->systemPrompt(),
-                'messages' => [
-                    ['role' => 'user', 'content' => $this->userPrompt($skill, $questionCount)],
-                ],
-                'output_config' => [
-                    'format' => [
-                        'type' => 'json_schema',
-                        'schema' => $this->outputSchema(),
-                    ],
-                ],
-            ]);
-
-        if ($response->failed()) {
-            $body = $response->json();
-            $message = $body['error']['message'] ?? $response->body();
-            throw new RuntimeException("Claude API error (HTTP {$response->status()}): {$message}");
-        }
-
-        $text = $this->extractText($response->json());
-        $parsed = json_decode($text, true, flags: JSON_THROW_ON_ERROR);
+        $parsed = $this->llm->generateJson(
+            system: $this->systemPrompt(),
+            user: $this->userPrompt($skill, $questionCount),
+            schema: $this->outputSchema(),
+        );
 
         if (! isset($parsed['questions']) || ! is_array($parsed['questions'])) {
-            throw new RuntimeException("Model response missing 'questions' array. Got: {$text}");
+            throw new RuntimeException("Model response missing 'questions' array. Got: ".json_encode($parsed));
         }
 
         return array_map(fn ($q) => $this->normalizeQuestion($q), $parsed['questions']);
@@ -105,28 +78,15 @@ class AiQuizGenerator
                             ],
                             'correct_index' => [
                                 'type' => 'integer',
-                                'enum' => [0, 1, 2, 3],
                             ],
                             'explanation' => ['type' => 'string'],
                         ],
                         'required' => ['question', 'options', 'correct_index', 'explanation'],
-                        'additionalProperties' => false,
                     ],
                 ],
             ],
             'required' => ['questions'],
-            'additionalProperties' => false,
         ];
-    }
-
-    private function extractText(array $body): string
-    {
-        foreach ($body['content'] ?? [] as $block) {
-            if (($block['type'] ?? null) === 'text') {
-                return $block['text'] ?? '';
-            }
-        }
-        throw new RuntimeException('No text block found in Claude API response: '.json_encode($body));
     }
 
     private function normalizeQuestion(array $q): array

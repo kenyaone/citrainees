@@ -3,29 +3,27 @@
 namespace App\Services;
 
 use App\Models\Skill;
-use Illuminate\Support\Facades\Http;
+use App\Services\Llm\LlmDriver;
 use RuntimeException;
 
 class PracticalTaskService
 {
+    public function __construct(private readonly LlmDriver $llm) {}
+
     /**
      * Generate a Kenya-context practical task + rubric for a skill.
      * Returns ['task_prompt' => string, 'rubric' => array<{criterion: string, weight: int}>, 'follow_up_question' => string].
      */
     public function generate(Skill $skill): array
     {
-        $this->requireApiKey();
-
-        $response = $this->callClaude(
+        $data = $this->llm->generateJson(
             system: $this->generateSystemPrompt(),
             user: $this->generateUserPrompt($skill),
             schema: $this->generateSchema(),
         );
 
-        $data = $this->parseJsonResponse($response);
-
         if (empty($data['task_prompt']) || empty($data['rubric']) || empty($data['follow_up_question'])) {
-            throw new RuntimeException('Malformed task response from Claude: '.json_encode($data));
+            throw new RuntimeException('Malformed task response from LLM: '.json_encode($data));
         }
 
         return [
@@ -37,22 +35,17 @@ class PracticalTaskService
 
     /**
      * Grade a submission against the rubric. Also flags AI-generated confidence.
-     * Returns ['score' => 0-100, 'feedback' => [criterion => note], 'ai_generated_flag' => low|medium|high, 'summary' => string].
      */
     public function grade(string $taskPrompt, array $rubric, string $submission, ?string $voiceTranscript = null): array
     {
-        $this->requireApiKey();
-
-        $response = $this->callClaude(
+        $data = $this->llm->generateJson(
             system: $this->gradeSystemPrompt(),
             user: $this->gradeUserPrompt($taskPrompt, $rubric, $submission, $voiceTranscript),
             schema: $this->gradeSchema(),
         );
 
-        $data = $this->parseJsonResponse($response);
-
         if (! isset($data['score']) || ! isset($data['ai_generated_flag'])) {
-            throw new RuntimeException('Malformed grading response from Claude: '.json_encode($data));
+            throw new RuntimeException('Malformed grading response from LLM: '.json_encode($data));
         }
 
         $score = (int) max(0, min(100, $data['score']));
@@ -66,50 +59,6 @@ class PracticalTaskService
             'ai_generated_flag' => $flag,
             'summary' => $data['summary'] ?? '',
         ];
-    }
-
-    private function requireApiKey(): void
-    {
-        if (empty(config('assessments.ai.api_key'))) {
-            throw new RuntimeException('ANTHROPIC_API_KEY is not set in .env.');
-        }
-    }
-
-    private function callClaude(string $system, string $user, array $schema): array
-    {
-        $response = Http::withHeaders([
-            'x-api-key' => config('assessments.ai.api_key'),
-            'anthropic-version' => config('assessments.ai.api_version'),
-            'content-type' => 'application/json',
-        ])
-            ->timeout(config('assessments.ai.timeout_seconds'))
-            ->post(config('assessments.ai.endpoint'), [
-                'model' => config('assessments.ai.model'),
-                'max_tokens' => config('assessments.ai.max_tokens'),
-                'system' => $system,
-                'messages' => [['role' => 'user', 'content' => $user]],
-                'output_config' => [
-                    'format' => ['type' => 'json_schema', 'schema' => $schema],
-                ],
-            ]);
-
-        if ($response->failed()) {
-            $body = $response->json();
-            throw new RuntimeException('Claude API error: '.($body['error']['message'] ?? $response->body()));
-        }
-
-        return $response->json();
-    }
-
-    private function parseJsonResponse(array $response): array
-    {
-        $text = '';
-        foreach ($response['content'] ?? [] as $block) {
-            if (($block['type'] ?? '') === 'text') {
-                $text .= $block['text'];
-            }
-        }
-        return json_decode($text, true, flags: JSON_THROW_ON_ERROR);
     }
 
     private function generateSystemPrompt(): string
