@@ -588,45 +588,62 @@ function PhotoUploader({ photoUrl, firstName, lastName }: { photoUrl: string | n
         router.delete('/my-profile/photo', { preserveScroll: true });
     };
 
+    const openPicker = () => fileRef.current?.click();
+
     return (
-        <div className="relative flex-shrink-0">
-            {photoUrl ? (
-                <img
-                    src={photoUrl}
-                    alt="Profile"
-                    className="h-20 w-20 rounded-full object-cover border-2 border-muted"
-                />
-            ) : (
-                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-700 grid place-items-center text-white text-xl font-semibold">
-                    {initials}
-                </div>
-            )}
+        <div className="flex-shrink-0 flex flex-col items-center gap-2">
             <input
                 ref={fileRef}
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/*"
                 className="sr-only"
                 onChange={upload}
             />
             <button
                 type="button"
-                onClick={() => fileRef.current?.click()}
+                onClick={openPicker}
                 disabled={uploading}
-                className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-white ring-2 ring-background shadow grid place-items-center hover:bg-muted disabled:opacity-60"
                 title="Change photo"
+                className="relative rounded-full focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-60"
             >
-                <Camera className="h-4 w-4" />
+                {photoUrl ? (
+                    <img
+                        src={photoUrl}
+                        alt="Profile"
+                        className="h-20 w-20 rounded-full object-cover border-2 border-muted"
+                    />
+                ) : (
+                    <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-700 grid place-items-center text-white text-xl font-semibold">
+                        {initials}
+                    </div>
+                )}
+                <span className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-white ring-2 ring-background shadow grid place-items-center">
+                    <Camera className="h-4 w-4" />
+                </span>
             </button>
-            {photoUrl && (
-                <button
+            <div className="flex items-center gap-2">
+                <Button
                     type="button"
-                    onClick={remove}
-                    className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-white ring-2 ring-background shadow grid place-items-center hover:bg-red-50"
-                    title="Remove photo"
+                    size="sm"
+                    variant="outline"
+                    onClick={openPicker}
+                    disabled={uploading}
                 >
-                    <Trash2 className="h-3 w-3 text-red-500" />
-                </button>
-            )}
+                    <Camera className="mr-1 h-3.5 w-3.5" />
+                    {uploading ? 'Uploading…' : photoUrl ? 'Change photo' : 'Add photo'}
+                </Button>
+                {photoUrl && (
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={remove}
+                        title="Remove photo"
+                    >
+                        <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                    </Button>
+                )}
+            </div>
         </div>
     );
 }
