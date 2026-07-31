@@ -351,33 +351,44 @@ export default function MyProfile({ alumni, photo_url, counties, skills, pending
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>My work history</CardTitle>
-                        <Button variant="outline" size="sm" onClick={() => setShowEmp((s) => !s)}>
-                            <Plus className="mr-1 h-4 w-4" />
-                            {showEmp ? 'Cancel' : 'Add'}
-                        </Button>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {showEmp && <SelfEmploymentForm onDone={() => setShowEmp(false)} />}
-                        {alumni.employment_records && alumni.employment_records.length > 0 ? (
-                            alumni.employment_records.map((rec) => (
-                                <EmploymentCard
-                                    key={rec.id}
-                                    rec={rec}
-                                    alumniFirstName={alumni.first_name}
-                                />
-                            ))
-                        ) : (
-                            !showEmp && (
-                                <p className="text-sm text-muted-foreground">
-                                    No work history yet. Add jobs, internships, or self-employment.
-                                </p>
-                            )
-                        )}
-                    </CardContent>
-                </Card>
+                {(() => {
+                    const stillStudying =
+                        alumni.current_status === 'studying' ||
+                        (alumni.education_records ?? []).some((e) => e.completion_status === 'ongoing');
+                    const hasWorkAlready = (alumni.employment_records ?? []).length > 0;
+                    // Hide the whole work-history card for alumni who are still students,
+                    // unless they've already added some (don't strand existing data).
+                    if (stillStudying && !hasWorkAlready) return null;
+                    return (
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <CardTitle>My work history</CardTitle>
+                                <Button variant="outline" size="sm" onClick={() => setShowEmp((s) => !s)}>
+                                    <Plus className="mr-1 h-4 w-4" />
+                                    {showEmp ? 'Cancel' : 'Add'}
+                                </Button>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {showEmp && <SelfEmploymentForm onDone={() => setShowEmp(false)} />}
+                                {alumni.employment_records && alumni.employment_records.length > 0 ? (
+                                    alumni.employment_records.map((rec) => (
+                                        <EmploymentCard
+                                            key={rec.id}
+                                            rec={rec}
+                                            alumniFirstName={alumni.first_name}
+                                        />
+                                    ))
+                                ) : (
+                                    !showEmp && (
+                                        <p className="text-sm text-muted-foreground">
+                                            No work history yet. Add jobs, internships, or self-employment.
+                                        </p>
+                                    )
+                                )}
+                            </CardContent>
+                        </Card>
+                    );
+                })()}
             </div>
         </>
     );
