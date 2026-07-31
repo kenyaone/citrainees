@@ -9,9 +9,11 @@ use App\Http\Controllers\CiClusterController;
 use App\Http\Controllers\CiProjectController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EducationRecordController;
+use App\Http\Controllers\EmployerLeadController;
 use App\Http\Controllers\EmploymentConfirmationController;
 use App\Http\Controllers\EmploymentRecordController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\InviteRequestController;
 use App\Http\Controllers\SignupController;
 use App\Http\Controllers\SkillVerificationRequestController;
 use App\Http\Controllers\VerificationController;
@@ -22,6 +24,9 @@ Route::get('/', WelcomeController::class)->name('home');
 
 Route::get('signup/{token}', [SignupController::class, 'show'])->name('signup.show');
 Route::post('signup/{token}', [SignupController::class, 'store'])->middleware('throttle:public-token')->name('signup.store');
+
+Route::post('employer-leads', [EmployerLeadController::class, 'store'])->middleware('throttle:public-form')->name('employer-leads.store');
+Route::post('invite-requests', [InviteRequestController::class, 'store'])->middleware('throttle:public-form')->name('invite-requests.store');
 
 Route::get('confirm-employment/{token}', [EmploymentConfirmationController::class, 'show'])->name('employment-confirm.show');
 Route::post('confirm-employment/{token}', [EmploymentConfirmationController::class, 'store'])->middleware('throttle:public-token')->name('employment-confirm.store');

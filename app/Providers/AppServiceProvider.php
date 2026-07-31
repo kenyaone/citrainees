@@ -41,6 +41,9 @@ class AppServiceProvider extends ServiceProvider
             ];
         });
 
+        // Public landing-page forms (employer leads, invite requests): keep spam-bots at bay
+        RateLimiter::for('public-form', fn (Request $request) => Limit::perHour(10)->by($request->ip()));
+
         // File uploads: caps abuse of the disk
         RateLimiter::for('uploads', fn (Request $request) => Limit::perHour(20)->by(
             $request->user()?->id ?: $request->ip(),
