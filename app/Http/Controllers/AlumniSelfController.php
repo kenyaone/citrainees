@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreEducationRecordRequest;
 use App\Http\Requests\StoreEmploymentRecordRequest;
 use App\Models\Alumni;
+use App\Models\EducationRecord;
 use App\Models\Skill;
+use App\Models\SkillVerificationRequest;
 use App\Models\Verification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,10 +28,20 @@ class AlumniSelfController extends Controller
             'skills:id,name,category',
         ]);
 
+        $pendingSkillCerts = SkillVerificationRequest::query()
+            ->where('alumni_id', $alumni->id)
+            ->where('status', 'pending')
+            ->get(['id', 'skill_id', 'evidence_original_name', 'created_at'])
+            ->keyBy('skill_id');
+
         return Inertia::render('my-profile', [
             'alumni' => $alumni,
+            'photo_url' => $alumni->profile_photo_path
+                ? Storage::disk('public')->url($alumni->profile_photo_path)
+                : null,
             'counties' => config('kenya_counties'),
             'skills' => Skill::orderBy('category')->orderBy('name')->get(['id', 'name', 'category']),
+            'pending_skill_certs' => $pendingSkillCerts,
         ]);
     }
 
@@ -97,5 +110,55 @@ class AlumniSelfController extends Controller
         $alumni->employmentRecords()->create($request->validated());
 
         return back()->with('success', 'Employment record added.');
+    }
+
+    public function uploadPhoto(Request $request): RedirectResponse
+    {
+        $alumni = $request->user()->alumniProfile;
+
+        $request->validate([
+            'photo' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+        ]);
+
+        if ($alumni->profile_photo_path && Storage::disk('public')->exists($alumni->profile_photo_path)) {
+            Storage::disk('public')->delete($alumni->profile_photo_path);
+        }
+
+        $path = $request->file('photo')->store("profile-photos/{$alumni->id}", 'public');
+        $alumni->update(['profile_photo_path' => $path]);
+
+        return back()->with('success', 'Photo updated.');
+    }
+
+    public function deletePhoto(Request $request): RedirectResponse
+    {
+        $alumni = $request->user()->alumniProfile;
+
+        if ($alumni->profile_photo_path && Storage::disk('public')->exists($alumni->profile_photo_path)) {
+            Storage::disk('public')->delete($alumni->profile_photo_path);
+        }
+
+        $alumni->update(['profile_photo_path' => null]);
+
+        return back()->with('success', 'Photo removed.');
+    }
+
+    public function uploadEducationCertificate(Request $request, EducationRecord $educationRecord): RedirectResponse
+    {
+        $alumni = $request->user()->alumniProfile;
+        abort_unless($educationRecord->alumni_id === $alumni->id, 403);
+
+        $request->validate([
+            'certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
+        ]);
+
+        if ($educationRecord->certificate_path && Storage::disk('public')->exists($educationRecord->certificate_path)) {
+            Storage::disk('public')->delete($educationRecord->certificate_path);
+        }
+
+        $path = $request->file('certificate')->store("education-certs/{$alumni->id}", 'public');
+        $educationRecord->update(['certificate_path' => $path]);
+
+        return back()->with('success', 'Education certificate uploaded — staff will verify it shortly.');
     }
 }

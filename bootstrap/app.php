@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureAlumni;
 use App\Http\Middleware\EnsureStaff;
 use App\Http\Middleware\HandleAppearance;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->alias([
             'staff' => EnsureStaff::class,
+            'admin' => EnsureAdmin::class,
             'alumni' => EnsureAlumni::class,
         ]);
     })

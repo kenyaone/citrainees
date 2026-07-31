@@ -1,6 +1,6 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
-import { Award, CheckCircle2, Plus, ShieldCheck } from 'lucide-react';
+import { Award, Camera, CheckCircle2, Clock, FileCheck, Plus, ShieldCheck, Trash2, Upload } from 'lucide-react';
 import EmployerConfirmationDialog from '@/components/employer-confirmation-dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,15 +29,24 @@ import {
     INSTITUTION_TYPE_OPTIONS,
 } from '@/types/tracer';
 
+interface PendingCert {
+    id: number;
+    skill_id: number;
+    evidence_original_name: string | null;
+    created_at: string;
+}
+
 interface Props {
     alumni: Alumni;
+    photo_url: string | null;
     counties: Record<string, string[]>;
     skills: Skill[];
+    pending_skill_certs: Record<string, PendingCert>;
 }
 
 const NONE = '__none__';
 
-export default function MyProfile({ alumni, counties, skills }: Props) {
+export default function MyProfile({ alumni, photo_url, counties, skills, pending_skill_certs }: Props) {
     const countyNames = Object.keys(counties);
     const [skillIds, setSkillIds] = useState<number[]>(alumni.skills?.map((s) => s.id) ?? []);
     const [values, setValues] = useState({
@@ -76,14 +85,19 @@ export default function MyProfile({ alumni, counties, skills }: Props) {
         <>
             <Head title="My profile" />
             <div className="flex flex-col gap-4 p-4 max-w-3xl">
-                <Heading
-                    title={`Habari, ${alumni.first_name}`}
-                    description={
-                        alumni.ci_project?.name
-                            ? `${alumni.ci_project.name} · Form 4 ${alumni.form_four_year ?? '—'}`
-                            : undefined
-                    }
-                />
+                <div className="flex items-start gap-4">
+                    <PhotoUploader photoUrl={photo_url} firstName={alumni.first_name} lastName={alumni.last_name ?? ''} />
+                    <div className="flex-1">
+                        <Heading
+                            title={`Habari, ${alumni.first_name}`}
+                            description={
+                                alumni.ci_project?.name
+                                    ? `${alumni.ci_project.name} · Form 4 ${alumni.form_four_year ?? '—'}`
+                                    : undefined
+                            }
+                        />
+                    </div>
+                </div>
 
                 {!alumni.verified_at && (
                     <Alert>
@@ -222,19 +236,20 @@ export default function MyProfile({ alumni, counties, skills }: Props) {
                                     selectedIds={skillIds}
                                     onChange={setSkillIds}
                                 />
-                                {alumni.skills && alumni.skills.some((s) => s.pivot?.verified_at) && (
-                                    <div className="mt-3 flex flex-wrap gap-1">
-                                        {alumni.skills
-                                            .filter((s) => s.pivot?.verified_at)
-                                            .map((s) => (
-                                                <Badge
+                                {alumni.skills && alumni.skills.length > 0 && (
+                                    <div className="mt-4 border rounded-md p-3 bg-muted/20">
+                                        <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
+                                            Verify your skills with a certificate
+                                        </div>
+                                        <div className="space-y-2">
+                                            {alumni.skills.map((s) => (
+                                                <SkillCertRow
                                                     key={s.id}
-                                                    className="bg-emerald-600 hover:bg-emerald-700 gap-1"
-                                                >
-                                                    <CheckCircle2 className="h-3 w-3" />
-                                                    {s.name}
-                                                </Badge>
+                                                    skill={s}
+                                                    pending={pending_skill_certs[s.id]}
+                                                />
                                             ))}
+                                        </div>
                                     </div>
                                 )}
                             </div>
@@ -318,21 +333,199 @@ export default function MyProfile({ alumni, counties, skills }: Props) {
 }
 
 function EducationCard({ rec }: { rec: EducationRecord }) {
+    const fileRef = useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = useState(false);
+
+    const upload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const form = new FormData();
+        form.append('certificate', file);
+        setUploading(true);
+        router.post(`/my-profile/education/${rec.id}/certificate`, form, {
+            preserveScroll: true,
+            forceFormData: true,
+            onFinish: () => {
+                setUploading(false);
+                if (fileRef.current) fileRef.current.value = '';
+            },
+        });
+    };
+
     return (
         <div className="border rounded-md p-3">
-            <div className="font-medium">
-                {rec.course_name}
-                {rec.specialization ? ` — ${rec.specialization}` : ''}
-            </div>
-            <div className="text-sm text-muted-foreground">
-                {rec.institution_name} · {rec.level.replace('_', ' ')} · {rec.start_year ?? '?'}–
-                {rec.end_year ?? 'ongoing'}
+            <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
+                    <div className="font-medium">
+                        {rec.course_name}
+                        {rec.specialization ? ` — ${rec.specialization}` : ''}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                        {rec.institution_name} · {rec.level.replace('_', ' ')} · {rec.start_year ?? '?'}–
+                        {rec.end_year ?? 'ongoing'}
+                    </div>
+                </div>
+                {rec.certificate_path ? (
+                    <Badge className="bg-emerald-600 hover:bg-emerald-700 gap-1">
+                        <FileCheck className="h-3 w-3" />
+                        Certificate on file
+                    </Badge>
+                ) : (
+                    <>
+                        <input
+                            ref={fileRef}
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            className="hidden"
+                            onChange={upload}
+                        />
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileRef.current?.click()}
+                            disabled={uploading}
+                        >
+                            <Upload className="mr-1 h-4 w-4" />
+                            {uploading ? 'Uploading…' : 'Attach certificate'}
+                        </Button>
+                    </>
+                )}
             </div>
             <div className="mt-1 flex gap-2">
                 <Badge variant="outline">{rec.institution_type}</Badge>
                 <Badge variant="secondary">{rec.completion_status}</Badge>
                 {rec.grade_awarded && <Badge>{rec.grade_awarded}</Badge>}
             </div>
+        </div>
+    );
+}
+
+function PhotoUploader({ photoUrl, firstName, lastName }: { photoUrl: string | null; firstName: string; lastName: string }) {
+    const fileRef = useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = useState(false);
+    const initials = ((firstName?.[0] ?? '') + (lastName?.[0] ?? '')).toUpperCase();
+
+    const upload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const form = new FormData();
+        form.append('photo', file);
+        setUploading(true);
+        router.post('/my-profile/photo', form, {
+            preserveScroll: true,
+            forceFormData: true,
+            onFinish: () => {
+                setUploading(false);
+                if (fileRef.current) fileRef.current.value = '';
+            },
+        });
+    };
+
+    const remove = () => {
+        if (!confirm('Remove your profile photo?')) return;
+        router.delete('/my-profile/photo', { preserveScroll: true });
+    };
+
+    return (
+        <div className="relative flex-shrink-0">
+            {photoUrl ? (
+                <img
+                    src={photoUrl}
+                    alt="Profile"
+                    className="h-20 w-20 rounded-full object-cover border-2 border-muted"
+                />
+            ) : (
+                <div className="h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-700 grid place-items-center text-white text-xl font-semibold">
+                    {initials}
+                </div>
+            )}
+            <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={upload}
+            />
+            <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                disabled={uploading}
+                className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full bg-white ring-2 ring-background shadow grid place-items-center hover:bg-muted disabled:opacity-60"
+                title="Change photo"
+            >
+                <Camera className="h-4 w-4" />
+            </button>
+            {photoUrl && (
+                <button
+                    type="button"
+                    onClick={remove}
+                    className="absolute -top-1 -right-1 h-6 w-6 rounded-full bg-white ring-2 ring-background shadow grid place-items-center hover:bg-red-50"
+                    title="Remove photo"
+                >
+                    <Trash2 className="h-3 w-3 text-red-500" />
+                </button>
+            )}
+        </div>
+    );
+}
+
+function SkillCertRow({ skill, pending }: { skill: Skill & { pivot?: { verified_at?: string | null; verified_via?: string | null } }; pending: PendingCert | undefined }) {
+    const fileRef = useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = useState(false);
+
+    const upload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const form = new FormData();
+        form.append('skill_id', String(skill.id));
+        form.append('evidence', file);
+        setUploading(true);
+        router.post('/skill-certificates', form, {
+            preserveScroll: true,
+            forceFormData: true,
+            onFinish: () => {
+                setUploading(false);
+                if (fileRef.current) fileRef.current.value = '';
+            },
+        });
+    };
+
+    const verified = skill.pivot?.verified_at;
+    const via = skill.pivot?.verified_via;
+
+    return (
+        <div className="flex items-center justify-between gap-3 py-1.5 border-b last:border-b-0">
+            <div className="flex-1 text-sm font-medium">{skill.name}</div>
+            {verified ? (
+                <Badge className="bg-emerald-600 hover:bg-emerald-700 gap-1">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Verified{via ? ` via ${via}` : ''}
+                </Badge>
+            ) : pending ? (
+                <Badge variant="secondary" className="gap-1">
+                    <Clock className="h-3 w-3" />
+                    Pending review
+                </Badge>
+            ) : (
+                <>
+                    <input
+                        ref={fileRef}
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png"
+                        className="hidden"
+                        onChange={upload}
+                    />
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => fileRef.current?.click()}
+                        disabled={uploading}
+                    >
+                        <Upload className="mr-1 h-4 w-4" />
+                        {uploading ? 'Uploading…' : 'Upload certificate'}
+                    </Button>
+                </>
+            )}
         </div>
     );
 }

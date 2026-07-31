@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, FolderGit2, LayoutGrid, Network, ShieldCheck, User, Users } from 'lucide-react';
+import { Building2, FolderGit2, LayoutGrid, Network, ShieldCheck, User, UserCog, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -40,7 +40,12 @@ export function AppSidebar() {
         pending_verifications_count?: number;
     }>().props;
     const isAlumni = auth?.user?.role === 'alumni';
-    const baseItems = isAlumni ? alumniNavItems : staffNavItems;
+    const isAdmin = auth?.user?.role === 'admin';
+    const baseItems = isAlumni
+        ? alumniNavItems
+        : isAdmin
+          ? [...staffNavItems, { title: 'Staff', href: '/staff', icon: UserCog }]
+          : staffNavItems;
     const mainNavItems: NavItem[] = baseItems.map((item) =>
         item.href === '/verifications' && pending_verifications_count
             ? { ...item, title: `Verifications (${pending_verifications_count})` }

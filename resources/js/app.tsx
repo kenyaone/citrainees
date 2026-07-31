@@ -15,9 +15,13 @@ createInertiaApp({
             case name === 'welcome':
             case name === 'signup':
             case name === 'signup-invalid':
+            case name === 'join':
+            case name === 'staff-signup':
+            case name === 'staff-signup-invalid':
             case name === 'employment-confirm':
             case name === 'employment-confirm-invalid':
             case name === 'employment-confirm-thanks':
+            case name.startsWith('directory/'):
                 return null;
             case name.startsWith('auth/'):
                 return AuthLayout;

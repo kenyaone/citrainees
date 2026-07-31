@@ -53,6 +53,7 @@ export interface EducationRecord {
     end_year: number | null;
     completion_status: string;
     grade_awarded: string | null;
+    certificate_path: string | null;
     is_public: boolean;
     verified_at: string | null;
     created_at: string;

@@ -18,6 +18,8 @@ use App\Http\Controllers\InviteRequestController;
 use App\Http\Controllers\JoinController;
 use App\Http\Controllers\SignupController;
 use App\Http\Controllers\SkillVerificationRequestController;
+use App\Http\Controllers\StaffController;
+use App\Http\Controllers\StaffSignupController;
 use App\Http\Controllers\VerificationController;
 use App\Http\Controllers\WelcomeController;
 use Illuminate\Support\Facades\Route;
@@ -36,6 +38,9 @@ Route::post('join', [JoinController::class, 'store'])->middleware('throttle:publ
 Route::get('directory', [DirectoryController::class, 'index'])->name('directory.index');
 Route::get('directory/{alumni}', [DirectoryController::class, 'show'])->name('directory.show');
 
+Route::get('staff-signup/{token}', [StaffSignupController::class, 'show'])->name('staff-signup.show');
+Route::post('staff-signup/{token}', [StaffSignupController::class, 'store'])->middleware('throttle:public-token')->name('staff-signup.store');
+
 Route::get('confirm-employment/{token}', [EmploymentConfirmationController::class, 'show'])->name('employment-confirm.show');
 Route::post('confirm-employment/{token}', [EmploymentConfirmationController::class, 'store'])->middleware('throttle:public-token')->name('employment-confirm.store');
 Route::get('confirm-employment-thanks', [EmploymentConfirmationController::class, 'thanks'])->name('employment-confirm.thanks');
@@ -47,7 +52,10 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'verified', 'alumni'])->group(function () {
     Route::get('my-profile', [AlumniSelfController::class, 'edit'])->name('my-profile.edit');
     Route::patch('my-profile', [AlumniSelfController::class, 'update'])->name('my-profile.update');
+    Route::post('my-profile/photo', [AlumniSelfController::class, 'uploadPhoto'])->middleware('throttle:uploads')->name('my-profile.photo.store');
+    Route::delete('my-profile/photo', [AlumniSelfController::class, 'deletePhoto'])->name('my-profile.photo.destroy');
     Route::post('my-profile/education', [AlumniSelfController::class, 'addEducation'])->name('my-profile.education.store');
+    Route::post('my-profile/education/{educationRecord}/certificate', [AlumniSelfController::class, 'uploadEducationCertificate'])->middleware('throttle:uploads')->name('my-profile.education.certificate');
     Route::post('my-profile/employment', [AlumniSelfController::class, 'addEmployment'])->name('my-profile.employment.store');
     Route::post('my-profile/employment/{employmentRecord}/issue-token', [EmploymentConfirmationController::class, 'issue'])->name('my-profile.employment.issue-token');
     Route::post('my-profile/employment/{employmentRecord}/regenerate-token', [EmploymentConfirmationController::class, 'regenerate'])->name('my-profile.employment.regenerate-token');
@@ -102,6 +110,14 @@ Route::middleware(['auth', 'verified', 'staff'])->group(function () {
     Route::post('skill-verifications/{skillVerification}/approve', [SkillVerificationRequestController::class, 'approve'])->name('skill-verifications.approve');
     Route::post('skill-verifications/{skillVerification}/reject', [SkillVerificationRequestController::class, 'reject'])->name('skill-verifications.reject');
     Route::delete('skill-verifications/{skillVerification}', [SkillVerificationRequestController::class, 'destroy'])->name('skill-verifications.destroy');
+});
+
+Route::middleware(['auth', 'verified', 'admin'])->group(function () {
+    Route::get('staff', [StaffController::class, 'index'])->name('staff.index');
+    Route::post('staff', [StaffController::class, 'invite'])->name('staff.invite');
+    Route::post('staff/invitations/{invitation}/resend', [StaffController::class, 'resend'])->name('staff.invitations.resend');
+    Route::post('staff/invitations/{invitation}/regenerate', [StaffController::class, 'regenerate'])->name('staff.invitations.regenerate');
+    Route::delete('staff/invitations/{invitation}', [StaffController::class, 'destroy'])->name('staff.invitations.destroy');
 });
 
 require __DIR__.'/settings.php';
