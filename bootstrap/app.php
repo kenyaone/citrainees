@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureAdmin;
 use App\Http\Middleware\EnsureAlumni;
+use App\Http\Middleware\EnsureEmployerReviewer;
 use App\Http\Middleware\EnsureStaff;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
@@ -30,6 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'staff' => EnsureStaff::class,
             'admin' => EnsureAdmin::class,
             'alumni' => EnsureAlumni::class,
+            'employer_reviewer' => EnsureEmployerReviewer::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

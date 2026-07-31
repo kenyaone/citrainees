@@ -11,6 +11,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\EducationRecordController;
 use App\Http\Controllers\EmployerLeadController;
+use App\Http\Controllers\EmployerReviewController;
 use App\Http\Controllers\EmploymentConfirmationController;
 use App\Http\Controllers\EmploymentRecordController;
 use App\Http\Controllers\HomeController;
@@ -135,6 +136,12 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::post('staff/invitations/{invitation}/resend', [StaffController::class, 'resend'])->name('staff.invitations.resend');
     Route::post('staff/invitations/{invitation}/regenerate', [StaffController::class, 'regenerate'])->name('staff.invitations.regenerate');
     Route::delete('staff/invitations/{invitation}', [StaffController::class, 'destroy'])->name('staff.invitations.destroy');
+});
+
+Route::middleware(['auth', 'verified', 'employer_reviewer'])->group(function () {
+    Route::get('my-reviews', [EmployerReviewController::class, 'index'])->name('my-reviews.index');
+    Route::patch('my-reviews/categories', [EmployerReviewController::class, 'saveCategories'])->name('my-reviews.categories');
+    Route::post('my-reviews/{attempt}/decide', [EmployerReviewController::class, 'decide'])->name('my-reviews.decide');
 });
 
 require __DIR__.'/settings.php';

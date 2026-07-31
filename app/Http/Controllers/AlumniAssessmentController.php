@@ -20,6 +20,8 @@ class AlumniAssessmentController extends Controller
         $alumni = $request->user()->alumniProfile;
         $alumni->load('skills');
 
+        $regulatedSlugs = config('assessments.regulated_skill_slugs', []);
+
         $assessmentsBySkill = SkillAssessment::where('is_active', true)
             ->whereIn('skill_id', $alumni->skills->pluck('id'))
             ->withCount('questions')
@@ -37,7 +39,7 @@ class AlumniAssessmentController extends Controller
             ->get()
             ->groupBy('skill_assessment_id');
 
-        $skillItems = $alumni->skills->map(function ($skill) use ($assessmentsBySkill, $certRequests, $latestAttempts) {
+        $skillItems = $alumni->skills->map(function ($skill) use ($assessmentsBySkill, $certRequests, $latestAttempts, $regulatedSlugs) {
             $pivot = $skill->pivot;
             $verified = $pivot?->verified_at !== null;
 
@@ -87,6 +89,7 @@ class AlumniAssessmentController extends Controller
                 'verified_at' => $pivot?->verified_at,
                 'quiz_path' => $quizPath,
                 'certificate_requests' => $certList,
+                'is_regulated' => in_array($skill->slug, $regulatedSlugs, true),
             ];
         })->values();
 

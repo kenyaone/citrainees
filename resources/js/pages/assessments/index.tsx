@@ -50,6 +50,7 @@ interface SkillItem {
     verified_via: string | null;
     verified_at: string | null;
     quiz_path: QuizPath | null;
+    is_regulated?: boolean;
     certificate_requests: CertificateRequest[];
 }
 
@@ -193,7 +194,14 @@ function SkillCard({ skill }: { skill: SkillItem }) {
                             Not verified yet. Choose one of the paths below to prove this skill.
                         </div>
 
-                        <div className={`grid gap-3 sm:grid-cols-2 ${hasQuiz ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+                        {skill.is_regulated && (
+                            <div className="rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-amber-900 dark:text-amber-200">
+                                <strong>{skill.name}</strong> is a regulated profession — verification requires a formal certificate from your training institution (e.g. KMTC, TSC) or professional body. Self-assessment paths are disabled for this skill.
+                            </div>
+                        )}
+                        <div className={`grid gap-3 sm:grid-cols-2 ${hasQuiz && !skill.is_regulated ? 'lg:grid-cols-4' : skill.is_regulated ? 'lg:grid-cols-1' : 'lg:grid-cols-3'}`}>
+                            {!skill.is_regulated && (
+                                <>
                             {/* Practical path — AI-generated written task */}
                             <div className="border rounded-md p-3 space-y-2">
                                 <div className="text-sm font-medium">Written practical</div>
@@ -229,9 +237,11 @@ function SkillCard({ skill }: { skill: SkillItem }) {
                                     Record demo
                                 </Button>
                             </div>
+                                </>
+                            )}
 
-                            {/* Quiz path — only shown when a pre-authored quiz exists */}
-                            {hasQuiz && (
+                            {/* Quiz path — only shown when a pre-authored quiz exists and skill is not regulated */}
+                            {hasQuiz && !skill.is_regulated && (
                                 <div className="border rounded-md p-3 space-y-2">
                                     <div className="text-sm font-medium">Take an assessment</div>
                                     <p className="text-xs text-muted-foreground">

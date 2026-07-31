@@ -1,5 +1,5 @@
 import { Link, usePage } from '@inertiajs/react';
-import { Building2, FolderGit2, LayoutGrid, Network, ShieldCheck, User, UserCog, Users } from 'lucide-react';
+import { Building2, ClipboardCheck, FolderGit2, LayoutGrid, Network, ShieldCheck, User, UserCog, Users } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
@@ -26,6 +26,8 @@ const staffNavItems: NavItem[] = [
 
 const alumniNavItems: NavItem[] = [{ title: 'My profile', href: '/my-profile', icon: User }];
 
+const employerNavItems: NavItem[] = [{ title: 'My reviews', href: '/my-reviews', icon: ClipboardCheck }];
+
 const footerNavItems: NavItem[] = [
     {
         title: 'Repository',
@@ -39,13 +41,17 @@ export function AppSidebar() {
         auth: { user: { role?: string } | null };
         pending_verifications_count?: number;
     }>().props;
-    const isAlumni = auth?.user?.role === 'alumni';
-    const isAdmin = auth?.user?.role === 'admin';
+    const role = auth?.user?.role;
+    const isAlumni = role === 'alumni';
+    const isAdmin = role === 'admin';
+    const isEmployer = role === 'employer';
     const baseItems = isAlumni
         ? alumniNavItems
-        : isAdmin
-          ? [...staffNavItems, { title: 'Staff', href: '/staff', icon: UserCog }]
-          : staffNavItems;
+        : isEmployer
+          ? employerNavItems
+          : isAdmin
+            ? [...staffNavItems, { title: 'Staff', href: '/staff', icon: UserCog }]
+            : staffNavItems;
     const mainNavItems: NavItem[] = baseItems.map((item) =>
         item.href === '/verifications' && pending_verifications_count
             ? { ...item, title: `Verifications (${pending_verifications_count})` }

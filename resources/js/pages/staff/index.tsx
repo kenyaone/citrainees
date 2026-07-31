@@ -159,6 +159,7 @@ export default function StaffIndex({ staff, pending_invites }: Props) {
                                     <SelectContent>
                                         <SelectItem value="staff">Staff</SelectItem>
                                         <SelectItem value="admin">Admin</SelectItem>
+                                        <SelectItem value="employer">Employer / Reviewer</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <InputError message={errors.role} />

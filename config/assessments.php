@@ -31,11 +31,25 @@ return [
         'timeout_seconds' => 90,
     ],
 
+    // Skills that require formal accreditation (professional body, TSC, KMTC, etc.).
+    // /assessments UI hides all self-assessment paths for these — only certificate upload.
+    // PracticalAssessmentController + AiQuizGenerator both refuse to generate for them.
     'regulated_skill_slugs' => [
         'nursing',
         'clinical-medicine',
         'pharmacy',
         'medical-laboratory',
+        'medicine',
+        'dentistry',
+        'community-health',
+        'nutrition',
+        'teaching',
+        'early-childhood-education',
+        'law',
+        'advocate',
+        'engineering',
+        'architecture',
+        'quantity-surveying',
     ],
 
     'default_pass_threshold' => 70,

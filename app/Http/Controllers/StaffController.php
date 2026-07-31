@@ -22,7 +22,7 @@ class StaffController extends Controller
     {
         return Inertia::render('staff/index', [
             'staff' => User::query()
-                ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_STAFF])
+                ->whereIn('role', [User::ROLE_ADMIN, User::ROLE_STAFF, User::ROLE_EMPLOYER])
                 ->orderBy('name')
                 ->get(['id', 'name', 'email', 'role', 'created_at', 'email_verified_at']),
             'pending_invites' => StaffInvitation::query()
@@ -52,7 +52,7 @@ class StaffController extends Controller
                 Rule::unique('staff_invitations', 'email')->whereNull('accepted_at'),
             ],
             'name' => ['required', 'string', 'max:150'],
-            'role' => ['required', 'in:staff,admin'],
+            'role' => ['required', 'in:staff,admin,employer'],
             'send_email' => ['sometimes', 'boolean'],
         ]);
 

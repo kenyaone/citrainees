@@ -42,6 +42,11 @@ class PracticalAssessmentController extends Controller
             'Add this skill to your profile before starting a practical assessment.',
         );
 
+        if (in_array($skill->slug, config('assessments.regulated_skill_slugs', []), true)) {
+            return redirect()->route('assessments.index')
+                ->with('error', "{$skill->name} is a regulated profession — verify with a certificate from your training institution or professional body.");
+        }
+
         $assessmentType = $format === 'video' ? 'practical_video' : 'practical';
         $assessment = SkillAssessment::firstOrCreate(
             ['skill_id' => $skill->id, 'type' => $assessmentType],

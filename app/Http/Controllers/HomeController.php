@@ -20,6 +20,10 @@ class HomeController extends Controller
             return redirect('/my-profile');
         }
 
+        if ($user->role === User::ROLE_EMPLOYER) {
+            return redirect('/my-reviews');
+        }
+
         return redirect('/dashboard');
     }
 }
