@@ -440,7 +440,7 @@ function EducationCard({ rec }: { rec: EducationRecord }) {
                             ref={fileRef}
                             type="file"
                             accept=".pdf,.jpg,.jpeg,.png"
-                            className="hidden"
+                            className="sr-only"
                             onChange={upload}
                         />
                         <Button
@@ -605,7 +605,7 @@ function PhotoUploader({ photoUrl, firstName, lastName }: { photoUrl: string | n
                 ref={fileRef}
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                className="hidden"
+                className="sr-only"
                 onChange={upload}
             />
             <button

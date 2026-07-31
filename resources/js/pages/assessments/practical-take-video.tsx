@@ -187,7 +187,7 @@ export default function PracticalTakeVideo({ attempt }: Props) {
                                 type="file"
                                 accept="video/*"
                                 capture="environment"
-                                className="hidden"
+                                className="sr-only"
                                 onChange={onFilePick}
                             />
                         </div>
