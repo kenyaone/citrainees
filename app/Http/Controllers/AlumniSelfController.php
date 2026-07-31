@@ -110,6 +110,17 @@ class AlumniSelfController extends Controller
             ->all();
         unset($data['skill_ids']);
 
+        $skillsChanged = $currentSkillIds !== $proposedSkillIds;
+
+        // Apply skill tagging immediately — it's a self-declared claim that only
+        // becomes trusted once verified via quiz / certificate / employer / practical.
+        // Waiting on staff review here blocks alumni from starting an assessment.
+        if ($skillsChanged) {
+            $alumni->skills()->sync(
+                array_fill_keys($proposedSkillIds, ['proficiency' => null])
+            );
+        }
+
         $diff = [];
         foreach ($data as $field => $newValue) {
             $currentValue = $alumni->getAttribute($field);
@@ -117,12 +128,12 @@ class AlumniSelfController extends Controller
                 $diff[$field] = ['from' => $currentValue, 'to' => $newValue];
             }
         }
-        if ($currentSkillIds !== $proposedSkillIds) {
-            $diff['skill_ids'] = ['from' => $currentSkillIds, 'to' => $proposedSkillIds];
-        }
 
         if (empty($diff)) {
-            return back()->with('success', 'No changes to save.');
+            return back()->with(
+                'success',
+                $skillsChanged ? 'Skills updated.' : 'No changes to save.',
+            );
         }
 
         Verification::create([
@@ -134,7 +145,12 @@ class AlumniSelfController extends Controller
             'status' => 'pending',
         ]);
 
-        return back()->with('success', 'Changes submitted for review. Staff will approve them shortly.');
+        return back()->with(
+            'success',
+            $skillsChanged
+                ? 'Skills updated. Other changes submitted for review — staff will approve them shortly.'
+                : 'Changes submitted for review. Staff will approve them shortly.',
+        );
     }
 
     public function addEducation(StoreEducationRecordRequest $request): RedirectResponse
