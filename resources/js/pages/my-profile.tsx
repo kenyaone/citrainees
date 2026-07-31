@@ -121,7 +121,7 @@ export default function MyProfile({ alumni, photo_url, counties, skills, pending
                 <OnboardingChecklist steps={onboarding} />
 
 
-                <Card>
+                <Card id="section-contact">
                     <CardHeader>
                         <CardTitle>Contact & status</CardTitle>
                     </CardHeader>
@@ -282,13 +282,15 @@ export default function MyProfile({ alumni, photo_url, counties, skills, pending
                                     Tag the skills you have. Take an assessment to earn a verified badge that employers
                                     trust.
                                 </p>
-                                <SkillsPicker
-                                    allSkills={skills}
-                                    selectedIds={skillIds}
-                                    onChange={setSkillIds}
-                                />
+                                <div id="section-skills">
+                                    <SkillsPicker
+                                        allSkills={skills}
+                                        selectedIds={skillIds}
+                                        onChange={setSkillIds}
+                                    />
+                                </div>
                                 {alumni.skills && alumni.skills.length > 0 && (
-                                    <div className="mt-4 border rounded-md p-3 bg-muted/20">
+                                    <div id="section-cert" className="mt-4 border rounded-md p-3 bg-muted/20">
                                         <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
                                             Verify your skills with a certificate
                                         </div>
@@ -304,7 +306,7 @@ export default function MyProfile({ alumni, photo_url, counties, skills, pending
                                     </div>
                                 )}
                             </div>
-                            <div className="flex items-start gap-2 border rounded-md p-3 bg-muted/30">
+                            <div id="section-public" className="flex items-start gap-2 border rounded-md p-3 bg-muted/30">
                                 <Checkbox
                                     id="is_public"
                                     checked={values.is_public}
@@ -329,7 +331,7 @@ export default function MyProfile({ alumni, photo_url, counties, skills, pending
                     </CardContent>
                 </Card>
 
-                <Card>
+                <Card id="section-education">
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>My education</CardTitle>
                         <Button variant="outline" size="sm" onClick={() => setShowEdu((s) => !s)}>
@@ -360,7 +362,7 @@ export default function MyProfile({ alumni, photo_url, counties, skills, pending
                     // unless they've already added some (don't strand existing data).
                     if (stillStudying && !hasWorkAlready) return null;
                     return (
-                        <Card>
+                        <Card id="section-employment">
                             <CardHeader className="flex flex-row items-center justify-between">
                                 <CardTitle>My work history</CardTitle>
                                 <Button variant="outline" size="sm" onClick={() => setShowEmp((s) => !s)}>
@@ -462,6 +464,26 @@ function EducationCard({ rec }: { rec: EducationRecord }) {
     );
 }
 
+const STEP_TARGETS: Record<string, string> = {
+    photo: 'section-contact',
+    skills: 'section-skills',
+    cert: 'section-cert',
+    education: 'section-education',
+    employment: 'section-employment',
+    confirm: 'section-employment',
+    public: 'section-public',
+};
+
+function scrollToStep(stepKey: string) {
+    const target = STEP_TARGETS[stepKey];
+    if (!target) return;
+    const el = document.getElementById(target);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    el.classList.add('ring-2', 'ring-emerald-500', 'ring-offset-2');
+    setTimeout(() => el.classList.remove('ring-2', 'ring-emerald-500', 'ring-offset-2'), 2000);
+}
+
 function OnboardingChecklist({ steps }: { steps: OnboardingStep[] }) {
     const done = steps.filter((s) => s.done).length;
     const total = steps.length;
@@ -500,11 +522,16 @@ function OnboardingChecklist({ steps }: { steps: OnboardingStep[] }) {
                     />
                 </div>
                 {nextStep && (
-                    <p className="text-xs text-muted-foreground mt-2">
-                        Next: <span className="font-semibold text-foreground">{nextStep.label}</span>
-                        {' — '}
-                        {nextStep.hint}
-                    </p>
+                    <div className="mt-3 flex items-center justify-between gap-3 flex-wrap">
+                        <p className="text-xs text-muted-foreground">
+                            Next: <span className="font-semibold text-foreground">{nextStep.label}</span>
+                            {' — '}
+                            {nextStep.hint}
+                        </p>
+                        <Button size="sm" onClick={() => scrollToStep(nextStep.key)}>
+                            Take me there →
+                        </Button>
+                    </div>
                 )}
             </CardHeader>
             <CardContent className="pt-0">
@@ -516,9 +543,17 @@ function OnboardingChecklist({ steps }: { steps: OnboardingStep[] }) {
                             ) : (
                                 <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/40 flex-shrink-0 mt-0.5" />
                             )}
-                            <span className={s.done ? 'text-muted-foreground line-through' : ''}>
-                                {s.label}
-                            </span>
+                            {s.done ? (
+                                <span className="text-muted-foreground line-through">{s.label}</span>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => scrollToStep(s.key)}
+                                    className="text-left hover:text-emerald-600 hover:underline"
+                                >
+                                    {s.label}
+                                </button>
+                            )}
                         </li>
                     ))}
                 </ul>
