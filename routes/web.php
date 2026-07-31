@@ -71,8 +71,11 @@ Route::middleware(['auth', 'verified', 'alumni'])->group(function () {
     Route::post('skill-certificates', [SkillVerificationRequestController::class, 'store'])->middleware('throttle:uploads')->name('skill-certificates.store');
 
     Route::post('practical-assessments/{skill}/start', [PracticalAssessmentController::class, 'start'])->name('practical.start');
+    Route::post('practical-assessments/{skill}/start-video', [PracticalAssessmentController::class, 'startVideo'])->name('practical.start-video');
     Route::get('practical-attempts/{attempt}/take', [PracticalAssessmentController::class, 'take'])->name('practical.take');
+    Route::get('practical-attempts/{attempt}/take-video', [PracticalAssessmentController::class, 'takeVideo'])->name('practical.take-video');
     Route::post('practical-attempts/{attempt}/submit', [PracticalAssessmentController::class, 'submit'])->name('practical.submit');
+    Route::post('practical-attempts/{attempt}/submit-video', [PracticalAssessmentController::class, 'submitVideo'])->middleware('throttle:uploads')->name('practical.submit-video');
     Route::post('practical-attempts/{attempt}/void', [PracticalAssessmentController::class, 'void'])->name('practical.void');
     Route::get('practical-attempts/{attempt}/result', [PracticalAssessmentController::class, 'result'])->name('practical.result');
     Route::post('practical-attempts/{attempt}/voice', [PracticalAssessmentController::class, 'uploadVoice'])->middleware('throttle:uploads')->name('practical.voice.store');
@@ -122,6 +125,7 @@ Route::middleware(['auth', 'verified', 'staff'])->group(function () {
     Route::delete('skill-verifications/{skillVerification}', [SkillVerificationRequestController::class, 'destroy'])->name('skill-verifications.destroy');
 
     Route::get('practical-attempts/{attempt}/voice-stream', [PracticalAssessmentController::class, 'streamVoice'])->name('practical.voice.stream');
+    Route::get('practical-attempts/{attempt}/video-stream', [PracticalAssessmentController::class, 'streamVideo'])->name('practical.video.stream');
     Route::post('practical-reviews/{attempt}/decide', [VerificationController::class, 'decidePractical'])->name('practical.decide');
 });
 

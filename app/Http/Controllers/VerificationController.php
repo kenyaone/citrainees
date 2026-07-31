@@ -41,7 +41,7 @@ class VerificationController extends Controller
             });
         } elseif ($tab === 'practical') {
             $query = SkillAssessmentAttempt::query()
-                ->whereHas('assessment', fn ($q) => $q->where('type', 'practical'))
+                ->whereHas('assessment', fn ($q) => $q->whereIn('type', ['practical', 'practical_video']))
                 ->whereNotNull('submitted_at')
                 ->whereNull('voided_at')
                 ->where('passed', true)
@@ -63,6 +63,9 @@ class VerificationController extends Controller
             $items->getCollection()->transform(function (SkillAssessmentAttempt $a) {
                 $a->voice_stream_url = $a->voice_path
                     ? URL::signedRoute('practical.voice.stream', ['attempt' => $a->id], now()->addMinutes(5))
+                    : null;
+                $a->video_stream_url = $a->video_path
+                    ? URL::signedRoute('practical.video.stream', ['attempt' => $a->id], now()->addMinutes(5))
                     : null;
                 return $a;
             });
@@ -96,17 +99,17 @@ class VerificationController extends Controller
                 ],
                 'practical' => [
                     'pending' => SkillAssessmentAttempt::query()
-                        ->whereHas('assessment', fn ($q) => $q->where('type', 'practical'))
+                        ->whereHas('assessment', fn ($q) => $q->whereIn('type', ['practical', 'practical_video']))
                         ->whereNotNull('submitted_at')
                         ->whereNull('voided_at')
                         ->where('passed', true)
                         ->whereNull('staff_decision')
                         ->count(),
                     'approved' => SkillAssessmentAttempt::query()
-                        ->whereHas('assessment', fn ($q) => $q->where('type', 'practical'))
+                        ->whereHas('assessment', fn ($q) => $q->whereIn('type', ['practical', 'practical_video']))
                         ->where('staff_decision', 'approved')->count(),
                     'rejected' => SkillAssessmentAttempt::query()
-                        ->whereHas('assessment', fn ($q) => $q->where('type', 'practical'))
+                        ->whereHas('assessment', fn ($q) => $q->whereIn('type', ['practical', 'practical_video']))
                         ->where('staff_decision', 'rejected')->count(),
                 ],
             ],
@@ -136,9 +139,10 @@ class VerificationController extends Controller
             ]);
 
             if ($data['decision'] === 'approved') {
+                $method = $attempt->assessment->type === 'practical_video' ? 'video' : 'practical';
                 $attempt->alumni->skills()->updateExistingPivot($attempt->assessment->skill_id, [
                     'verified_at' => now(),
-                    'verified_via' => 'practical',
+                    'verified_via' => $method,
                     'verified_by' => $request->user()->id,
                 ]);
             }

@@ -12,13 +12,16 @@ class PracticalTaskService
 
     /**
      * Generate a Kenya-context practical task + rubric for a skill.
-     * Returns ['task_prompt' => string, 'rubric' => array<{criterion: string, weight: int}>, 'follow_up_question' => string].
+     * $language = 'en' | 'sw' — Swahili prompts help alumni whose written English is weak
+     * demonstrate their skill without a language penalty.
+     * $format = 'text' | 'video' — text tasks want written responses, video tasks ask
+     * the alumnus to record a 60-sec demonstration instead.
      */
-    public function generate(Skill $skill): array
+    public function generate(Skill $skill, string $language = 'en', string $format = 'text'): array
     {
         $data = $this->llm->generateJson(
-            system: $this->generateSystemPrompt(),
-            user: $this->generateUserPrompt($skill),
+            system: $this->generateSystemPrompt($language, $format),
+            user: $this->generateUserPrompt($skill, $language, $format),
             schema: $this->generateSchema(),
         );
 
@@ -36,10 +39,10 @@ class PracticalTaskService
     /**
      * Grade a submission against the rubric. Also flags AI-generated confidence.
      */
-    public function grade(string $taskPrompt, array $rubric, string $submission, ?string $voiceTranscript = null): array
+    public function grade(string $taskPrompt, array $rubric, string $submission, ?string $voiceTranscript = null, string $language = 'en'): array
     {
         $data = $this->llm->generateJson(
-            system: $this->gradeSystemPrompt(),
+            system: $this->gradeSystemPrompt($language),
             user: $this->gradeUserPrompt($taskPrompt, $rubric, $submission, $voiceTranscript),
             schema: $this->gradeSchema(),
         );
@@ -61,28 +64,40 @@ class PracticalTaskService
         ];
     }
 
-    private function generateSystemPrompt(): string
+    private function generateSystemPrompt(string $language, string $format): string
     {
+        $languageInstruction = $language === 'sw'
+            ? "Write the task_prompt and follow_up_question ENTIRELY in Kiswahili (Kenyan variety, natural Sheng phrasing where appropriate). Rubric criteria stay in English so staff reviewers can read them."
+            : "Write in clear, simple English (target reader has Form Four education).";
+
+        $formatBlock = $format === 'video'
+            ? "The alumnus will respond by recording a 60-second video demonstrating the skill on their phone — NO written response. Your task_prompt must instruct them WHAT to physically show/do on camera (e.g. 'Show us how you would...', 'Demonstrate the steps to...'). Rubric criteria should evaluate what a staff reviewer would visually see in the video (e.g. 'demonstrates correct grip on the tool', 'explains each step clearly', 'safety precautions visible')."
+            : "The alumnus will respond in 200-400 words of typed text. Your rubric criteria should evaluate concrete outcomes visible in the text (e.g. 'identifies target audience clearly', 'uses at least 3 realistic cost estimates in KSh').";
+
         return <<<PROMPT
-        You are an assessor creating a 15-minute practical task for Compassion International Kenya alumni to demonstrate a skill they learned informally (self-taught, YouTube, on-the-job, non-accredited).
+        You are an assessor creating a practical task for Compassion International Kenya alumni to demonstrate a skill they learned informally (self-taught, YouTube, on-the-job, non-accredited).
+
+        {$languageInstruction}
+
+        {$formatBlock}
 
         Your task must:
-        - Be answerable in 200-400 words of text.
         - Reference a specific Kenyan context: a named town/county (Nakuru, Kisumu, Eldoret, Mombasa, Nairobi neighbourhoods, etc.), a local business type, KSh amounts, Kenyan cultural details, or Swahili/Sheng phrasing where natural.
-        - Be practical and applied — not theoretical. Test what the person can DO, not what they can define.
-        - Be answerable without external tools or references. No "look up X" instructions.
-        - Be specific enough that the same task from Google or ChatGPT would need heavy adaptation.
+        - Be practical and applied — not theoretical. Test what the person can DO.
+        - Be answerable without external tools or references.
 
-        Rubric: 5 criteria, each worth 20 points, totalling 100. Criteria should assess concrete outcomes visible in the response (e.g. "identifies target audience clearly", "uses at least 3 realistic cost estimates in KSh"), not vague qualities like "quality" or "creativity".
+        Rubric: exactly 5 criteria, each worth 20 points, totalling 100. Each criterion must be a concrete observable outcome, not a vague quality.
 
-        Follow-up question: one short question (10-20 words) the alumnus will answer in a 30-second voice recording after passing. It should require them to explain a specific choice they made in their submission — hard to fake if they didn't do it themselves.
+        Follow-up question: one short question (10-20 words) the alumnus will answer in a 30-second voice recording after passing. It should require them to explain a specific choice they made — hard to fake if they didn't do it themselves.
         PROMPT;
     }
 
-    private function generateUserPrompt(Skill $skill): string
+    private function generateUserPrompt(Skill $skill, string $language, string $format): string
     {
         $category = $skill->category ? " (category: {$skill->category})" : '';
-        return "Generate a practical task, rubric, and voice follow-up question for the skill: **{$skill->name}**{$category}.";
+        $languageNote = $language === 'sw' ? ' Write task and follow-up in Kiswahili.' : '';
+        $formatNote = $format === 'video' ? ' Format: video demonstration on phone.' : ' Format: 200-400 word written response.';
+        return "Generate a practical task, rubric, and voice follow-up question for the skill: **{$skill->name}**{$category}.{$languageNote}{$formatNote}";
     }
 
     private function generateSchema(): array
@@ -110,10 +125,16 @@ class PracticalTaskService
         ];
     }
 
-    private function gradeSystemPrompt(): string
+    private function gradeSystemPrompt(string $language): string
     {
+        $languageNote = $language === 'sw'
+            ? "The submission may be in Kiswahili, English, or a mix — grade content, not language. Do NOT dock points for language choice or grammar unless communication is genuinely unclear."
+            : "The submission is in English but may include Swahili or Sheng phrasing — that's fine, don't dock points for it.";
+
         return <<<PROMPT
         You are grading a practical task submission for Compassion International Kenya alumni.
+
+        {$languageNote}
 
         For each rubric criterion, score 0-20 based on how well the submission meets it. Give a one-sentence note per criterion.
 

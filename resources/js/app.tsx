@@ -22,6 +22,7 @@ createInertiaApp({
             case name === 'employment-confirm-invalid':
             case name === 'employment-confirm-thanks':
             case name === 'assessments/practical-take':
+            case name === 'assessments/practical-take-video':
             case name === 'assessments/practical-result':
             case name.startsWith('directory/'):
                 return null;

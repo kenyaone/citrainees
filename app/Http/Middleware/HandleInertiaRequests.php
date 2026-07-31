@@ -60,7 +60,7 @@ class HandleInertiaRequests extends Middleware
                 ? \App\Models\Verification::where('status', 'pending')->count()
                     + \App\Models\SkillVerificationRequest::where('status', 'pending')->count()
                     + \App\Models\SkillAssessmentAttempt::query()
-                        ->whereHas('assessment', fn ($q) => $q->where('type', 'practical'))
+                        ->whereHas('assessment', fn ($q) => $q->whereIn('type', ['practical', 'practical_video']))
                         ->whereNotNull('submitted_at')
                         ->whereNull('voided_at')
                         ->where('passed', true)

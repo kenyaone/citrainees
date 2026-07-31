@@ -62,6 +62,7 @@ export default function MyProfile({ alumni, photo_url, counties, skills, pending
         email_secondary: alumni.email_secondary ?? '',
         current_status: alumni.current_status ?? NONE,
         gender: alumni.gender ?? NONE,
+        preferred_language: alumni.preferred_language ?? 'en',
         bio: alumni.bio ?? '',
         county: alumni.county ?? '',
         sub_county: alumni.sub_county ?? '',
@@ -237,6 +238,24 @@ export default function MyProfile({ alumni, photo_url, counties, skills, pending
                                         </SelectContent>
                                     </Select>
                                     <InputError message={errors.gender} />
+                                </div>
+                                <div>
+                                    <Label>Preferred assessment language</Label>
+                                    <Select
+                                        value={values.preferred_language}
+                                        onValueChange={(v) => setValues({ ...values, preferred_language: v })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="en">English</SelectItem>
+                                            <SelectItem value="sw">Kiswahili</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        AI-generated practical tasks + rubrics will be in this language.
+                                    </p>
                                 </div>
                             </div>
                             <div>

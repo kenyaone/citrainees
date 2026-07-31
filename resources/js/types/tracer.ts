@@ -28,6 +28,7 @@ export interface Alumni {
     kcse_mean_grade: string | null;
     current_status: string | null;
     bio: string | null;
+    preferred_language: string | null;
     phone_primary: string | null;
     email_secondary: string | null;
     is_public: boolean;

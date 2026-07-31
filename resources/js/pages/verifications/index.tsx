@@ -66,13 +66,15 @@ interface PracticalAttempt {
     id: number;
     alumni_id: number;
     submitted_at: string;
-    score: number;
-    submission_text: string;
+    score: number | null;
+    submission_text: string | null;
+    submission_caption: string | null;
     task_prompt: string;
     ai_feedback: { feedback: Array<{ criterion: string; points: number; note: string }>; summary?: string } | null;
     ai_generated_flag: 'low' | 'medium' | 'high' | null;
     tab_switches: number;
     voice_stream_url: string | null;
+    video_stream_url: string | null;
     staff_decision: string | null;
     staff_reviewed_at: string | null;
     alumni: {
@@ -82,6 +84,7 @@ interface PracticalAttempt {
         ci_project: { name: string; code: string } | null;
     };
     assessment: {
+        type: string;
         skill: { id: number; name: string; category: string | null };
     };
     staff_reviewer: { id: number; name: string } | null;
@@ -470,6 +473,7 @@ export default function VerificationsIndex({ tab, items, status, counts }: Props
 }
 
 function PracticalCard({ a }: { a: PracticalAttempt }) {
+    const isVideo = a.assessment.type === 'practical_video';
     const [notes, setNotes] = useState('');
     const [processing, setProcessing] = useState(false);
     const decide = (decision: 'approved' | 'rejected') => {
@@ -504,7 +508,11 @@ function PracticalCard({ a }: { a: PracticalAttempt }) {
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Badge className="text-sm">{a.score}/100</Badge>
+                        {isVideo ? (
+                            <Badge className="text-sm bg-purple-600 hover:bg-purple-700">Video demo</Badge>
+                        ) : (
+                            <Badge className="text-sm">{a.score}/100</Badge>
+                        )}
                         {a.ai_generated_flag && (
                             <span
                                 className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ${flagColor}`}
@@ -529,12 +537,25 @@ function PracticalCard({ a }: { a: PracticalAttempt }) {
                         {a.task_prompt}
                     </div>
                 </details>
-                <div>
-                    <div className="text-xs font-semibold text-muted-foreground mb-1">Written submission</div>
-                    <div className="whitespace-pre-wrap bg-muted/40 p-3 rounded text-sm">
-                        {a.submission_text}
+                {a.video_stream_url && (
+                    <div>
+                        <div className="text-xs font-semibold text-muted-foreground mb-1">Video submission</div>
+                        <video controls src={a.video_stream_url} className="w-full max-h-96 rounded bg-black" />
+                        {a.submission_caption && (
+                            <div className="text-xs text-muted-foreground italic mt-1">
+                                "{a.submission_caption}"
+                            </div>
+                        )}
                     </div>
-                </div>
+                )}
+                {a.submission_text && (
+                    <div>
+                        <div className="text-xs font-semibold text-muted-foreground mb-1">Written submission</div>
+                        <div className="whitespace-pre-wrap bg-muted/40 p-3 rounded text-sm">
+                            {a.submission_text}
+                        </div>
+                    </div>
+                )}
                 {a.ai_feedback?.feedback && (
                     <div>
                         <div className="text-xs font-semibold text-muted-foreground mb-1">AI grading</div>

@@ -24,6 +24,16 @@ class PracticalAssessmentController extends Controller
 
     public function start(Skill $skill, Request $request): RedirectResponse
     {
+        return $this->startAttempt($skill, $request, format: 'text');
+    }
+
+    public function startVideo(Skill $skill, Request $request): RedirectResponse
+    {
+        return $this->startAttempt($skill, $request, format: 'video');
+    }
+
+    private function startAttempt(Skill $skill, Request $request, string $format): RedirectResponse
+    {
         $alumni = $request->user()->alumniProfile;
 
         abort_unless(
@@ -32,13 +42,16 @@ class PracticalAssessmentController extends Controller
             'Add this skill to your profile before starting a practical assessment.',
         );
 
+        $assessmentType = $format === 'video' ? 'practical_video' : 'practical';
         $assessment = SkillAssessment::firstOrCreate(
-            ['skill_id' => $skill->id, 'type' => 'practical'],
+            ['skill_id' => $skill->id, 'type' => $assessmentType],
             [
-                'title' => "Practical: {$skill->name}",
-                'description' => 'AI-generated practical task with human review.',
+                'title' => $format === 'video' ? "Video demo: {$skill->name}" : "Practical: {$skill->name}",
+                'description' => $format === 'video'
+                    ? 'Record a 60-second video demonstrating this skill. Staff-reviewed.'
+                    : 'AI-generated practical task with human review.',
                 'pass_threshold' => 70,
-                'time_limit_minutes' => self::TIME_LIMIT_MINUTES,
+                'time_limit_minutes' => $format === 'video' ? null : self::TIME_LIMIT_MINUTES,
                 'is_active' => true,
             ],
         );
@@ -50,7 +63,7 @@ class PracticalAssessmentController extends Controller
             ->first();
 
         if ($existing) {
-            return redirect()->route('practical.take', $existing);
+            return redirect()->route($format === 'video' ? 'practical.take-video' : 'practical.take', $existing);
         }
 
         $priorAttempts = SkillAssessmentAttempt::where('alumni_id', $alumni->id)
@@ -59,7 +72,7 @@ class PracticalAssessmentController extends Controller
 
         if ($priorAttempts >= self::MAX_LIFETIME_ATTEMPTS) {
             return redirect()->route('assessments.index')
-                ->with('error', 'You have used all '.self::MAX_LIFETIME_ATTEMPTS.' attempts for this practical task. Ask staff to review your submissions.');
+                ->with('error', 'You have used all '.self::MAX_LIFETIME_ATTEMPTS.' attempts for this task. Ask staff to review your submissions.');
         }
 
         $latest = SkillAssessmentAttempt::where('alumni_id', $alumni->id)
@@ -76,7 +89,11 @@ class PracticalAssessmentController extends Controller
         }
 
         try {
-            $task = $this->tasks->generate($skill);
+            $task = $this->tasks->generate(
+                $skill,
+                language: $alumni->preferred_language ?? 'en',
+                format: $format,
+            );
         } catch (\Throwable $e) {
             return redirect()->route('assessments.index')
                 ->with('error', 'Could not generate a task right now. Try again in a minute. ('.$e->getMessage().')');
@@ -90,7 +107,7 @@ class PracticalAssessmentController extends Controller
             'task_rubric' => array_merge($task['rubric'], [['follow_up_question' => $task['follow_up_question']]]),
         ]);
 
-        return redirect()->route('practical.take', $attempt);
+        return redirect()->route($format === 'video' ? 'practical.take-video' : 'practical.take', $attempt);
     }
 
     public function take(SkillAssessmentAttempt $attempt, Request $request): Response|RedirectResponse
@@ -98,10 +115,7 @@ class PracticalAssessmentController extends Controller
         $alumni = $request->user()->alumniProfile;
         abort_unless($attempt->alumni_id === $alumni->id, 404);
 
-        if ($attempt->voided_at) {
-            return redirect()->route('practical.result', $attempt);
-        }
-        if ($attempt->submitted_at) {
+        if ($attempt->voided_at || $attempt->submitted_at) {
             return redirect()->route('practical.result', $attempt);
         }
 
@@ -121,6 +135,65 @@ class PracticalAssessmentController extends Controller
                 'started_at' => $attempt->started_at->toIso8601String(),
             ],
         ]);
+    }
+
+    public function takeVideo(SkillAssessmentAttempt $attempt, Request $request): Response|RedirectResponse
+    {
+        $alumni = $request->user()->alumniProfile;
+        abort_unless($attempt->alumni_id === $alumni->id, 404);
+
+        if ($attempt->submitted_at) {
+            return redirect()->route('practical.result', $attempt);
+        }
+
+        $attempt->load('assessment.skill:id,name');
+
+        return Inertia::render('assessments/practical-take-video', [
+            'attempt' => [
+                'id' => $attempt->id,
+                'skill_name' => $attempt->assessment->skill->name,
+                'task_prompt' => $attempt->task_prompt,
+            ],
+        ]);
+    }
+
+    public function submitVideo(SkillAssessmentAttempt $attempt, Request $request): RedirectResponse
+    {
+        $alumni = $request->user()->alumniProfile;
+        abort_unless($attempt->alumni_id === $alumni->id, 404);
+        abort_if($attempt->submitted_at !== null, 422, 'Already submitted.');
+
+        $request->validate([
+            'video' => ['required', 'file', 'mimetypes:video/webm,video/mp4,video/quicktime,video/x-matroska,video/ogg', 'max:30720'],
+            'caption' => ['nullable', 'string', 'max:200'],
+        ]);
+
+        // Clean up any prior draft video file for this attempt (shouldn't exist, but defensive).
+        if ($attempt->video_path && Storage::disk('local')->exists($attempt->video_path)) {
+            Storage::disk('local')->delete($attempt->video_path);
+        }
+
+        $path = $request->file('video')->store("video-submissions/{$alumni->id}", 'local');
+        $submittedAt = now();
+
+        DB::transaction(function () use ($attempt, $path, $request, $submittedAt) {
+            $attempt->update([
+                'submitted_at' => $submittedAt,
+                'duration_seconds' => (int) abs($submittedAt->diffInSeconds($attempt->started_at)),
+                'video_path' => $path,
+                'video_uploaded_at' => $submittedAt,
+                'submission_caption' => $request->input('caption'),
+                // Video path skips AI grading — staff decides. Mark passed=true so it
+                // routes into the Verifications review queue (matches practical text
+                // flow which sends passing attempts there).
+                'passed' => true,
+                'score' => null,
+                'max_score' => null,
+                'ai_generated_flag' => null,
+            ]);
+        });
+
+        return redirect()->route('practical.result', $attempt);
     }
 
     public function submit(SkillAssessmentAttempt $attempt, Request $request): RedirectResponse
@@ -157,6 +230,7 @@ class PracticalAssessmentController extends Controller
                 rubric: $rubric,
                 submission: $data['submission_text'],
                 voiceTranscript: null,
+                language: $alumni->preferred_language ?? 'en',
             );
         } catch (\Throwable $e) {
             return back()->with('error', 'AI grader unavailable — try submit again in a moment. ('.$e->getMessage().')');
@@ -285,5 +359,13 @@ class PracticalAssessmentController extends Controller
         abort_unless($attempt->voice_path && Storage::disk('local')->exists($attempt->voice_path), 404);
 
         return Storage::disk('local')->response($attempt->voice_path);
+    }
+
+    public function streamVideo(SkillAssessmentAttempt $attempt, Request $request)
+    {
+        abort_unless($request->user()?->isStaff(), 403);
+        abort_unless($attempt->video_path && Storage::disk('local')->exists($attempt->video_path), 404);
+
+        return Storage::disk('local')->response($attempt->video_path);
     }
 }

@@ -193,13 +193,13 @@ function SkillCard({ skill }: { skill: SkillItem }) {
                             Not verified yet. Choose one of the paths below to prove this skill.
                         </div>
 
-                        <div className={`grid gap-3 ${hasQuiz ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
-                            {/* Practical path — AI-generated task */}
+                        <div className={`grid gap-3 sm:grid-cols-2 ${hasQuiz ? 'lg:grid-cols-4' : 'lg:grid-cols-3'}`}>
+                            {/* Practical path — AI-generated written task */}
                             <div className="border rounded-md p-3 space-y-2">
-                                <div className="text-sm font-medium">Practical task</div>
+                                <div className="text-sm font-medium">Written practical</div>
                                 <p className="text-xs text-muted-foreground">
-                                    AI-generated Kenya-context task, ~15 min, focused sitting required.
-                                    Works for any skill including informal ones. Staff-reviewed.
+                                    AI-generated Kenya-context task. Type a 200-word response in 15 min.
+                                    Focused sitting. Staff-reviewed.
                                 </p>
                                 <Button
                                     size="sm"
@@ -208,7 +208,25 @@ function SkillCard({ skill }: { skill: SkillItem }) {
                                     className="w-full"
                                 >
                                     <Play className="mr-1 h-4 w-4" />
-                                    Start practical
+                                    Start written
+                                </Button>
+                            </div>
+
+                            {/* Video demo path — no typing required */}
+                            <div className="border rounded-md p-3 space-y-2">
+                                <div className="text-sm font-medium">Video demo</div>
+                                <p className="text-xs text-muted-foreground">
+                                    Show us on camera. Record 60 sec here or upload from your phone.
+                                    Best for hands-on skills. Staff-reviewed.
+                                </p>
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => router.post(`/practical-assessments/${skill.id}/start-video`)}
+                                    className="w-full"
+                                >
+                                    <Play className="mr-1 h-4 w-4" />
+                                    Record demo
                                 </Button>
                             </div>
 

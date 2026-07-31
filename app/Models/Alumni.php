@@ -18,7 +18,7 @@ class Alumni extends Model
         'date_of_birth', 'gender', 'county', 'sub_county',
         'sponsorship_start_year', 'sponsorship_end_year', 'form_four_year',
         'kcse_index_number', 'kcse_mean_grade',
-        'current_status', 'bio', 'profile_photo_path',
+        'current_status', 'bio', 'preferred_language', 'profile_photo_path',
         'phone_primary', 'email_secondary',
         'is_public', 'field_visibility',
         'verified_at', 'verified_by',

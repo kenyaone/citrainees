@@ -13,6 +13,8 @@ class SkillAssessmentAttempt extends Model
         'task_prompt', 'task_rubric', 'submission_text',
         'ai_feedback', 'ai_generated_flag',
         'voice_path', 'voice_uploaded_at',
+        'video_path', 'video_uploaded_at',
+        'submission_caption',
         'voided_at', 'voided_reason', 'tab_switches',
         'staff_reviewed_at', 'staff_reviewer_id', 'staff_decision',
     ];
@@ -26,6 +28,7 @@ class SkillAssessmentAttempt extends Model
             'task_rubric' => 'array',
             'ai_feedback' => 'array',
             'voice_uploaded_at' => 'datetime',
+            'video_uploaded_at' => 'datetime',
             'voided_at' => 'datetime',
             'staff_reviewed_at' => 'datetime',
             'passed' => 'boolean',
