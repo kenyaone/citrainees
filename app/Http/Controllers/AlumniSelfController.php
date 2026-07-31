@@ -83,6 +83,7 @@ class AlumniSelfController extends Controller
             'phone_primary' => ['nullable', 'string', 'max:32'],
             'email_secondary' => ['nullable', 'email', 'max:255'],
             'current_status' => ['nullable', 'in:studying,employed,self_employed,unemployed,seeking,unknown'],
+            'gender' => ['nullable', 'in:female,male,other,prefer_not_to_say'],
             'bio' => ['nullable', 'string', 'max:2000'],
             'county' => ['nullable', 'string', 'max:64', 'in:'.implode(',', array_keys(config('kenya_counties')))],
             'sub_county' => ['nullable', 'string', 'max:64'],

@@ -40,6 +40,7 @@ class JoinController extends Controller
             'ci_project_id' => ['required', 'integer', 'exists:ci_projects,id'],
             'form_four_year' => ['required', 'integer', 'between:1990,'.$currentYear],
             'county' => ['required', 'string', Rule::in($countyKeys)],
+            'gender' => ['nullable', 'in:female,male,other,prefer_not_to_say'],
             'phone_primary' => ['nullable', 'string', 'max:32'],
         ]);
 
@@ -60,6 +61,7 @@ class JoinController extends Controller
                 'last_name' => $data['last_name'],
                 'form_four_year' => $data['form_four_year'],
                 'county' => $data['county'],
+                'gender' => $data['gender'] ?? null,
                 'phone_primary' => $data['phone_primary'] ?? null,
                 'current_status' => 'unknown',
                 'is_public' => false,

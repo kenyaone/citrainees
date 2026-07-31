@@ -36,6 +36,7 @@ export default function Join({ projects, counties }: Props) {
         ci_project_id: '',
         form_four_year: '',
         county: '',
+        gender: '',
         phone_primary: '',
     });
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -203,6 +204,25 @@ export default function Join({ projects, counties }: Props) {
                                         </Select>
                                         <InputError message={errors.county} />
                                     </div>
+                                </div>
+
+                                <div>
+                                    <Label>Gender</Label>
+                                    <Select
+                                        value={values.gender}
+                                        onValueChange={(v) => setValues({ ...values, gender: v })}
+                                    >
+                                        <SelectTrigger className="bg-white/5 border-white/10">
+                                            <SelectValue placeholder="Select (optional)" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="female">Female</SelectItem>
+                                            <SelectItem value="male">Male</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
+                                            <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={errors.gender} />
                                 </div>
 
                                 <Button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950" disabled={processing}>

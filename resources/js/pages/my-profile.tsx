@@ -61,6 +61,7 @@ export default function MyProfile({ alumni, photo_url, counties, skills, pending
         phone_primary: alumni.phone_primary ?? '',
         email_secondary: alumni.email_secondary ?? '',
         current_status: alumni.current_status ?? NONE,
+        gender: alumni.gender ?? NONE,
         bio: alumni.bio ?? '',
         county: alumni.county ?? '',
         sub_county: alumni.sub_county ?? '',
@@ -79,6 +80,7 @@ export default function MyProfile({ alumni, photo_url, counties, skills, pending
             {
                 ...values,
                 current_status: values.current_status === NONE ? null : values.current_status,
+                gender: values.gender === NONE ? null : values.gender,
                 skill_ids: skillIds,
             },
             {
@@ -216,6 +218,25 @@ export default function MyProfile({ alumni, photo_url, counties, skills, pending
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                </div>
+                                <div>
+                                    <Label>Gender</Label>
+                                    <Select
+                                        value={values.gender}
+                                        onValueChange={(v) => setValues({ ...values, gender: v })}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value={NONE}>—</SelectItem>
+                                            <SelectItem value="female">Female</SelectItem>
+                                            <SelectItem value="male">Male</SelectItem>
+                                            <SelectItem value="other">Other</SelectItem>
+                                            <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <InputError message={errors.gender} />
                                 </div>
                             </div>
                             <div>
