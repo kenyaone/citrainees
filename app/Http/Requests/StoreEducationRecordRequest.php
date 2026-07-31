@@ -8,7 +8,8 @@ class StoreEducationRecordRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->isStaff() ?? false;
+        // Routes are already guarded by 'staff' or 'alumni' middleware.
+        return $this->user() !== null;
     }
 
     public function rules(): array
