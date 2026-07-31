@@ -8,12 +8,14 @@ use App\Http\Controllers\AlumniSelfController;
 use App\Http\Controllers\CiClusterController;
 use App\Http\Controllers\CiProjectController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\EducationRecordController;
 use App\Http\Controllers\EmployerLeadController;
 use App\Http\Controllers\EmploymentConfirmationController;
 use App\Http\Controllers\EmploymentRecordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InviteRequestController;
+use App\Http\Controllers\JoinController;
 use App\Http\Controllers\SignupController;
 use App\Http\Controllers\SkillVerificationRequestController;
 use App\Http\Controllers\VerificationController;
@@ -27,6 +29,12 @@ Route::post('signup/{token}', [SignupController::class, 'store'])->middleware('t
 
 Route::post('employer-leads', [EmployerLeadController::class, 'store'])->middleware('throttle:public-form')->name('employer-leads.store');
 Route::post('invite-requests', [InviteRequestController::class, 'store'])->middleware('throttle:public-form')->name('invite-requests.store');
+
+Route::get('join', [JoinController::class, 'show'])->name('join.show');
+Route::post('join', [JoinController::class, 'store'])->middleware('throttle:public-form')->name('join.store');
+
+Route::get('directory', [DirectoryController::class, 'index'])->name('directory.index');
+Route::get('directory/{alumni}', [DirectoryController::class, 'show'])->name('directory.show');
 
 Route::get('confirm-employment/{token}', [EmploymentConfirmationController::class, 'show'])->name('employment-confirm.show');
 Route::post('confirm-employment/{token}', [EmploymentConfirmationController::class, 'store'])->middleware('throttle:public-token')->name('employment-confirm.store');

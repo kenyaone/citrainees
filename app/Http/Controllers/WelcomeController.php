@@ -24,6 +24,10 @@ class WelcomeController extends Controller
                 'clusters_count' => CiCluster::count(),
                 'skills_catalog_count' => Skill::count(),
             ],
+            'public_alumni_count' => Alumni::query()
+                ->where('is_public', true)
+                ->whereHas('skills', fn ($q) => $q->whereNotNull('alumni_skill.verified_at'))
+                ->count(),
         ]);
     }
 }

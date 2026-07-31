@@ -22,29 +22,14 @@ interface Props {
         clusters_count: number;
         skills_catalog_count: number;
     };
+    public_alumni_count: number;
 }
 
 type FlashProps = {
-    employer_lead_success?: boolean;
     invite_request_success?: boolean;
 };
 
-function EmployerCard({ success }: { success: boolean }) {
-    const [values, setValues] = useState({ email: '', organisation: '', hiring_for: '' });
-    const [errors, setErrors] = useState<Record<string, string>>({});
-    const [processing, setProcessing] = useState(false);
-
-    const submit = (e: FormEvent) => {
-        e.preventDefault();
-        setProcessing(true);
-        router.post('/employer-leads', values, {
-            preserveScroll: true,
-            onError: (errs) => setErrors(errs as Record<string, string>),
-            onSuccess: () => setValues({ email: '', organisation: '', hiring_for: '' }),
-            onFinish: () => setProcessing(false),
-        });
-    };
-
+function EmployerCard({ publicCount }: { publicCount: number }) {
     return (
         <div className="flex flex-col rounded-2xl bg-white/[0.04] ring-1 ring-white/10 p-6 lg:p-7 hover:ring-emerald-500/40 transition h-full">
             <div className="flex items-center gap-3 mb-4">
@@ -57,55 +42,39 @@ function EmployerCard({ success }: { success: boolean }) {
                 </div>
             </div>
             <p className="text-sm text-white/60 leading-relaxed">
-                A searchable directory of CI Kenya alumni with verified skills is launching soon. Leave your email and we&apos;ll invite you the day it opens.
+                Browse {publicCount > 0 ? `${publicCount.toLocaleString()} ` : ''}CI Kenya alumni with verified skills — filter by skill, county, cluster, and Form 4 cohort. Every profile is opt-in and every skill badge shows how it was verified.
             </p>
 
-            {success ? (
-                <div className="mt-5 rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/30 p-4 text-sm text-emerald-100 flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
-                    <span>Thanks — you&apos;re on the list. We&apos;ll be in touch.</span>
-                </div>
-            ) : (
-                <form onSubmit={submit} className="mt-5 space-y-3">
-                    <input
-                        type="email"
-                        required
-                        placeholder="Work email"
-                        value={values.email}
-                        onChange={(e) => setValues({ ...values, email: e.target.value })}
-                        className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2.5 text-sm placeholder-white/30"
-                    />
-                    {errors.email && <p className="text-xs text-red-300">{errors.email}</p>}
-                    <input
-                        type="text"
-                        placeholder="Organisation (optional)"
-                        value={values.organisation}
-                        onChange={(e) => setValues({ ...values, organisation: e.target.value })}
-                        className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2.5 text-sm placeholder-white/30"
-                    />
-                    <input
-                        type="text"
-                        placeholder="Hiring for (e.g. Digital Marketing)"
-                        value={values.hiring_for}
-                        onChange={(e) => setValues({ ...values, hiring_for: e.target.value })}
-                        className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2.5 text-sm placeholder-white/30"
-                    />
-                    <button
-                        type="submit"
-                        disabled={processing}
-                        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
-                    >
-                        {processing ? 'Adding you…' : 'Notify me when it launches'}
-                        <ArrowRight className="h-4 w-4" />
-                    </button>
-                </form>
-            )}
+            <ul className="mt-5 space-y-2 text-sm text-white/70">
+                <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-amber-300 flex-shrink-0 mt-0.5" />
+                    <span>Quiz-scored, certificate-backed, or employer-confirmed skills</span>
+                </li>
+                <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-amber-300 flex-shrink-0 mt-0.5" />
+                    <span>Filters for skill, county, cluster, cohort</span>
+                </li>
+                <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-amber-300 flex-shrink-0 mt-0.5" />
+                    <span>No employer account required</span>
+                </li>
+            </ul>
+
+            <div className="mt-auto pt-6">
+                <Link
+                    href="/directory"
+                    className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 px-4 py-2.5 text-sm font-semibold"
+                >
+                    Browse alumni
+                    <ArrowRight className="h-4 w-4" />
+                </Link>
+            </div>
         </div>
     );
 }
 
-function AlumniCard({ success }: { success: boolean }) {
-    const [mode, setMode] = useState<'signin' | 'request'>('signin');
+function AlumniCard({ inviteSuccess }: { inviteSuccess: boolean }) {
+    const [mode, setMode] = useState<'signup' | 'signin' | 'invite'>('signup');
     const [values, setValues] = useState({
         first_name: '',
         last_name: '',
@@ -117,7 +86,7 @@ function AlumniCard({ success }: { success: boolean }) {
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [processing, setProcessing] = useState(false);
 
-    const submit = (e: FormEvent) => {
+    const submitInvite = (e: FormEvent) => {
         e.preventDefault();
         setProcessing(true);
         router.post('/invite-requests', values, {
@@ -136,6 +105,11 @@ function AlumniCard({ success }: { success: boolean }) {
         });
     };
 
+    const tabCls = (isActive: boolean) =>
+        `flex-1 rounded-md px-2 py-2 font-medium transition ${
+            isActive ? 'bg-white text-slate-900' : 'text-white/60 hover:text-white'
+        }`;
+
     return (
         <div className="flex flex-col rounded-2xl bg-white/[0.04] ring-1 ring-emerald-500/20 p-6 lg:p-7 hover:ring-emerald-500/40 transition shadow-lg shadow-emerald-500/5 h-full">
             <div className="flex items-center gap-3 mb-4">
@@ -148,51 +122,78 @@ function AlumniCard({ success }: { success: boolean }) {
                 </div>
             </div>
 
-            <div className="flex rounded-lg bg-white/5 ring-1 ring-white/10 p-0.5 mb-4 text-xs">
-                <button
-                    type="button"
-                    onClick={() => setMode('signin')}
-                    className={`flex-1 rounded-md px-3 py-2 font-medium transition ${
-                        mode === 'signin' ? 'bg-white text-slate-900' : 'text-white/60 hover:text-white'
-                    }`}
-                >
-                    I have a login
+            <div className="flex rounded-lg bg-white/5 ring-1 ring-white/10 p-0.5 mb-4 text-[11px]">
+                <button type="button" onClick={() => setMode('signup')} className={tabCls(mode === 'signup')}>
+                    Sign up now
                 </button>
-                <button
-                    type="button"
-                    onClick={() => setMode('request')}
-                    className={`flex-1 rounded-md px-3 py-2 font-medium transition ${
-                        mode === 'request' ? 'bg-white text-slate-900' : 'text-white/60 hover:text-white'
-                    }`}
-                >
-                    Request an invite
+                <button type="button" onClick={() => setMode('signin')} className={tabCls(mode === 'signin')}>
+                    Sign in
+                </button>
+                <button type="button" onClick={() => setMode('invite')} className={tabCls(mode === 'invite')}>
+                    Request invite
                 </button>
             </div>
 
-            {mode === 'signin' ? (
+            {mode === 'signup' && (
                 <>
                     <p className="text-sm text-white/60 leading-relaxed">
-                        Already have a signup link from your CI project office? Complete signup there. Already have an account? Sign in to your profile below.
+                        Create your account in one step, then build out your profile — education, work, skills, and certificates. Staff verifies you and employers can find you.
+                    </p>
+                    <ul className="mt-4 space-y-1.5 text-xs text-white/60">
+                        <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                            <span>Upload certificates & take skill quizzes</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                            <span>Ask past employers to confirm your work</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                            <span>Control what employers see (opt-in per field)</span>
+                        </li>
+                    </ul>
+                    <div className="mt-auto pt-5">
+                        <Link
+                            href="/join"
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2.5 text-sm font-semibold"
+                        >
+                            Create my account
+                            <ArrowRight className="h-4 w-4" />
+                        </Link>
+                    </div>
+                </>
+            )}
+
+            {mode === 'signin' && (
+                <>
+                    <p className="text-sm text-white/60 leading-relaxed">
+                        Already have an account? Sign in to keep building your profile — add skills, upload certificates, and see who&apos;s viewed your profile.
                     </p>
                     <div className="mt-auto pt-5">
                         <Link
                             href={login()}
-                            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2.5 text-sm font-semibold"
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 hover:bg-white/20 ring-1 ring-white/20 px-4 py-2.5 text-sm font-semibold"
                         >
                             Sign in to my profile
                             <ArrowRight className="h-4 w-4" />
                         </Link>
                     </div>
                 </>
-            ) : success ? (
-                <div className="mt-1 rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/30 p-4 text-sm text-emerald-100 flex items-start gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
-                    <span>Got it. CI Kenya will match your details to your project record and send an invite link.</span>
-                </div>
-            ) : (
-                <form onSubmit={submit} className="space-y-2.5">
-                    <div className="grid grid-cols-2 gap-2.5">
-                        <div>
+            )}
+
+            {mode === 'invite' &&
+                (inviteSuccess ? (
+                    <div className="mt-1 rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/30 p-4 text-sm text-emerald-100 flex items-start gap-2">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                        <span>Got it. CI Kenya will match your details to your project record and send an invite link.</span>
+                    </div>
+                ) : (
+                    <form onSubmit={submitInvite} className="space-y-2.5">
+                        <p className="text-xs text-white/50 -mt-1 mb-2">
+                            Prefer CI staff to onboard you? Share your details and we&apos;ll send an invite once we&apos;ve matched you to your project record.
+                        </p>
+                        <div className="grid grid-cols-2 gap-2.5">
                             <input
                                 type="text"
                                 required
@@ -201,9 +202,6 @@ function AlumniCard({ success }: { success: boolean }) {
                                 onChange={(e) => setValues({ ...values, first_name: e.target.value })}
                                 className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
                             />
-                            {errors.first_name && <p className="text-xs text-red-300 mt-1">{errors.first_name}</p>}
-                        </div>
-                        <div>
                             <input
                                 type="text"
                                 required
@@ -212,52 +210,50 @@ function AlumniCard({ success }: { success: boolean }) {
                                 onChange={(e) => setValues({ ...values, last_name: e.target.value })}
                                 className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
                             />
-                            {errors.last_name && <p className="text-xs text-red-300 mt-1">{errors.last_name}</p>}
                         </div>
-                    </div>
-                    <input
-                        type="email"
-                        required
-                        placeholder="Email"
-                        value={values.email}
-                        onChange={(e) => setValues({ ...values, email: e.target.value })}
-                        className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
-                    />
-                    {errors.email && <p className="text-xs text-red-300">{errors.email}</p>}
-                    <div className="grid grid-cols-2 gap-2.5">
                         <input
-                            type="tel"
-                            placeholder="Phone (optional)"
-                            value={values.phone}
-                            onChange={(e) => setValues({ ...values, phone: e.target.value })}
+                            type="email"
+                            required
+                            placeholder="Email"
+                            value={values.email}
+                            onChange={(e) => setValues({ ...values, email: e.target.value })}
                             className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
                         />
+                        {errors.email && <p className="text-xs text-red-300">{errors.email}</p>}
+                        <div className="grid grid-cols-2 gap-2.5">
+                            <input
+                                type="tel"
+                                placeholder="Phone (optional)"
+                                value={values.phone}
+                                onChange={(e) => setValues({ ...values, phone: e.target.value })}
+                                className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
+                            />
+                            <input
+                                type="number"
+                                placeholder="Form 4 year"
+                                min={1990}
+                                max={new Date().getFullYear()}
+                                value={values.form_four_year}
+                                onChange={(e) => setValues({ ...values, form_four_year: e.target.value })}
+                                className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
+                            />
+                        </div>
                         <input
-                            type="number"
-                            placeholder="Form 4 year"
-                            min={1990}
-                            max={new Date().getFullYear()}
-                            value={values.form_four_year}
-                            onChange={(e) => setValues({ ...values, form_four_year: e.target.value })}
+                            type="text"
+                            placeholder="CI project (e.g. Nakuru East)"
+                            value={values.ci_project_hint}
+                            onChange={(e) => setValues({ ...values, ci_project_hint: e.target.value })}
                             className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
                         />
-                    </div>
-                    <input
-                        type="text"
-                        placeholder="CI project (e.g. Nakuru East)"
-                        value={values.ci_project_hint}
-                        onChange={(e) => setValues({ ...values, ci_project_hint: e.target.value })}
-                        className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
-                    />
-                    <button
-                        type="submit"
-                        disabled={processing}
-                        className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2.5 text-sm font-semibold disabled:opacity-60"
-                    >
-                        {processing ? 'Sending request…' : 'Request my invite'}
-                    </button>
-                </form>
-            )}
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-white/10 hover:bg-white/20 ring-1 ring-white/20 px-4 py-2 text-sm font-semibold disabled:opacity-60"
+                        >
+                            {processing ? 'Sending request…' : 'Request my invite'}
+                        </button>
+                    </form>
+                ))}
         </div>
     );
 }
@@ -304,7 +300,7 @@ function StaffCard() {
     );
 }
 
-export default function Welcome({ stats }: Props) {
+export default function Welcome({ stats, public_alumni_count }: Props) {
     const page = usePage<{
         auth: { user: { role?: string } | null };
         flash?: FlashProps;
@@ -367,8 +363,8 @@ export default function Welcome({ stats }: Props) {
 
                     <div className="mx-auto max-w-7xl px-6 pb-16 lg:pb-24">
                         <div className="grid lg:grid-cols-3 gap-5 lg:gap-6">
-                            <EmployerCard success={!!flash.employer_lead_success} />
-                            <AlumniCard success={!!flash.invite_request_success} />
+                            <EmployerCard publicCount={public_alumni_count} />
+                            <AlumniCard inviteSuccess={!!flash.invite_request_success} />
                             <StaffCard />
                         </div>
                     </div>

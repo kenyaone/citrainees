@@ -107,8 +107,18 @@ class DemoDataSeeder extends Seeder
 
         for ($i = 0; $i < 50; $i++) {
             $project = $projects->random();
+            $isPublic = rand(1, 100) <= 80;
+            $isStaffVerified = rand(1, 100) <= 60;
             $person = Alumni::factory()->create([
                 'ci_project_id' => $project->id,
+                'is_public' => $isPublic,
+                'verified_at' => $isStaffVerified ? now()->subDays(rand(1, 60)) : null,
+                'field_visibility' => $isPublic
+                    ? [
+                        'phone_primary' => rand(1, 100) <= 40,
+                        'email_secondary' => rand(1, 100) <= 40,
+                    ]
+                    : null,
             ]);
             $alumni->push($person);
         }
