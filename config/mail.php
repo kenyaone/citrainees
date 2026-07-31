@@ -115,4 +115,8 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    // Where employer-directory contact messages get relayed. Defaults to
+    // the from address if unset — override with CI-inbox address in prod.
+    'contact_relay_address' => env('MAIL_CONTACT_RELAY_ADDRESS'),
+
 ];

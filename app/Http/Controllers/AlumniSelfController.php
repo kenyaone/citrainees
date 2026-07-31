@@ -42,7 +42,37 @@ class AlumniSelfController extends Controller
             'counties' => config('kenya_counties'),
             'skills' => Skill::orderBy('category')->orderBy('name')->get(['id', 'name', 'category']),
             'pending_skill_certs' => $pendingSkillCerts,
+            'onboarding' => $this->onboardingSteps($alumni, $pendingSkillCerts),
         ]);
+    }
+
+    private function onboardingSteps($alumni, $pendingSkillCerts): array
+    {
+        $skills = $alumni->skills ?? collect();
+        $educationRecords = $alumni->educationRecords ?? collect();
+        $employmentRecords = $alumni->employmentRecords ?? collect();
+
+        $hasPhoto = ! empty($alumni->profile_photo_path);
+        $skillsTagged = $skills->count() >= 3;
+        $hasVerifiedOrPendingSkillCert = $skills->contains(fn ($s) => (bool) $s->pivot?->verified_at)
+            || $pendingSkillCerts->count() > 0
+            || $educationRecords->contains(fn ($e) => ! empty($e->certificate_path));
+        $hasEducation = $educationRecords->count() > 0;
+        $hasEmployment = $employmentRecords->count() > 0;
+        $employerConfirmRequested = $employmentRecords->contains(
+            fn ($e) => ! empty($e->confirmation_token) || ! empty($e->confirmed_at),
+        );
+        $publicOptedIn = (bool) $alumni->is_public;
+
+        return [
+            ['key' => 'photo', 'label' => 'Add a profile photo', 'done' => $hasPhoto, 'hint' => 'Use the camera button on your avatar.'],
+            ['key' => 'skills', 'label' => 'Tag at least 3 skills', 'done' => $skillsTagged, 'hint' => 'Employers filter by skill first.'],
+            ['key' => 'cert', 'label' => 'Upload one certificate', 'done' => $hasVerifiedOrPendingSkillCert, 'hint' => 'Skill or education — either counts.'],
+            ['key' => 'education', 'label' => 'Add your education', 'done' => $hasEducation, 'hint' => 'TVET, college, or university.'],
+            ['key' => 'employment', 'label' => 'Add current or past work', 'done' => $hasEmployment, 'hint' => 'Include internships or attachments.'],
+            ['key' => 'confirm', 'label' => 'Ask an employer to confirm', 'done' => $employerConfirmRequested, 'hint' => 'The strongest verification signal.'],
+            ['key' => 'public', 'label' => 'Opt in to public directory', 'done' => $publicOptedIn, 'hint' => 'Toggle at the bottom of "Contact & status".'],
+        ];
     }
 
     public function update(Request $request): RedirectResponse

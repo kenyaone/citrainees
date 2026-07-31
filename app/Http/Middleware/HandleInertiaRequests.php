@@ -54,6 +54,7 @@ class HandleInertiaRequests extends Middleware
                 'import_skipped' => fn () => $request->session()->get('import_skipped'),
                 'employer_lead_success' => fn () => $request->session()->get('employer_lead_success'),
                 'invite_request_success' => fn () => $request->session()->get('invite_request_success'),
+                'directory_message_success' => fn () => $request->session()->get('directory_message_success'),
             ],
             'pending_verifications_count' => fn () => $request->user()?->isStaff()
                 ? \App\Models\Verification::where('status', 'pending')->count()

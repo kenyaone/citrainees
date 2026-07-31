@@ -36,17 +36,25 @@ interface PendingCert {
     created_at: string;
 }
 
+interface OnboardingStep {
+    key: string;
+    label: string;
+    done: boolean;
+    hint: string;
+}
+
 interface Props {
     alumni: Alumni;
     photo_url: string | null;
     counties: Record<string, string[]>;
     skills: Skill[];
     pending_skill_certs: Record<string, PendingCert>;
+    onboarding: OnboardingStep[];
 }
 
 const NONE = '__none__';
 
-export default function MyProfile({ alumni, photo_url, counties, skills, pending_skill_certs }: Props) {
+export default function MyProfile({ alumni, photo_url, counties, skills, pending_skill_certs, onboarding }: Props) {
     const countyNames = Object.keys(counties);
     const [skillIds, setSkillIds] = useState<number[]>(alumni.skills?.map((s) => s.id) ?? []);
     const [values, setValues] = useState({
@@ -106,6 +114,9 @@ export default function MyProfile({ alumni, photo_url, counties, skills, pending
                         </AlertDescription>
                     </Alert>
                 )}
+
+                <OnboardingChecklist steps={onboarding} />
+
 
                 <Card>
                     <CardHeader>
@@ -397,6 +408,71 @@ function EducationCard({ rec }: { rec: EducationRecord }) {
                 {rec.grade_awarded && <Badge>{rec.grade_awarded}</Badge>}
             </div>
         </div>
+    );
+}
+
+function OnboardingChecklist({ steps }: { steps: OnboardingStep[] }) {
+    const done = steps.filter((s) => s.done).length;
+    const total = steps.length;
+    const pct = Math.round((done / total) * 100);
+    const nextStep = steps.find((s) => !s.done);
+
+    if (done === total) {
+        return (
+            <div className="rounded-md border border-emerald-500/40 bg-emerald-500/5 p-4 flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                <div className="flex-1 text-sm">
+                    <div className="font-semibold text-emerald-700 dark:text-emerald-400">
+                        Your profile is complete!
+                    </div>
+                    <div className="text-muted-foreground mt-0.5">
+                        Employers can now find you when they search the directory.
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <Card>
+            <CardHeader className="pb-3">
+                <div className="flex items-center justify-between gap-3">
+                    <CardTitle className="text-base">Complete your profile</CardTitle>
+                    <span className="text-xs font-semibold text-muted-foreground tabular-nums">
+                        {done}/{total} · {pct}%
+                    </span>
+                </div>
+                <div className="mt-2 h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                        className="h-full bg-emerald-500 transition-all"
+                        style={{ width: `${pct}%` }}
+                    />
+                </div>
+                {nextStep && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                        Next: <span className="font-semibold text-foreground">{nextStep.label}</span>
+                        {' — '}
+                        {nextStep.hint}
+                    </p>
+                )}
+            </CardHeader>
+            <CardContent className="pt-0">
+                <ul className="space-y-1.5">
+                    {steps.map((s) => (
+                        <li key={s.key} className="flex items-start gap-2 text-sm">
+                            {s.done ? (
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                            ) : (
+                                <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/40 flex-shrink-0 mt-0.5" />
+                            )}
+                            <span className={s.done ? 'text-muted-foreground line-through' : ''}>
+                                {s.label}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            </CardContent>
+        </Card>
     );
 }
 

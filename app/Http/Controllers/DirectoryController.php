@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\DirectoryContactRelay;
 use App\Models\Alumni;
 use App\Models\CiCluster;
+use App\Models\DirectoryMessage;
 use App\Models\ProfileView;
 use App\Models\Skill;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -106,6 +111,7 @@ class DirectoryController extends Controller
         };
 
         return Inertia::render('directory/show', [
+            'contact_relay_email' => Config::get('mail.contact_relay_address') ?? Config::get('mail.from.address'),
             'alumni' => [
                 'id' => $alumni->id,
                 'first_name' => $alumni->first_name,
@@ -154,5 +160,45 @@ class DirectoryController extends Controller
                     ]),
             ],
         ]);
+    }
+
+    public function sendMessage(Request $request, Alumni $alumni): RedirectResponse
+    {
+        abort_unless($alumni->is_public, 404);
+
+        $data = $request->validate([
+            'from_name' => ['required', 'string', 'max:100'],
+            'from_email' => ['required', 'email', 'max:255'],
+            'from_organisation' => ['nullable', 'string', 'max:150'],
+            'purpose' => ['nullable', 'string', 'max:150'],
+            'message' => ['required', 'string', 'min:20', 'max:2000'],
+        ]);
+
+        $contactMessage = DirectoryMessage::create([
+            ...$data,
+            'alumni_id' => $alumni->id,
+            'ip_address' => $request->ip(),
+        ]);
+
+        ProfileView::query()
+            ->where('alumni_id', $alumni->id)
+            ->where('viewer_ip', $request->ip())
+            ->latest()
+            ->limit(1)
+            ->update(['contact_attempted' => true]);
+
+        $relayTo = Config::get('mail.contact_relay_address') ?? Config::get('mail.from.address');
+        if ($relayTo && $this->mailIsConfigured()) {
+            Mail::to($relayTo)->send(new DirectoryContactRelay($contactMessage, $alumni));
+            $contactMessage->update(['relayed_at' => now()]);
+        }
+
+        return back()->with('directory_message_success', true);
+    }
+
+    private function mailIsConfigured(): bool
+    {
+        return ! empty(Config::get('mail.mailers.'.Config::get('mail.default').'.host'))
+            && ! empty(Config::get('mail.from.address'));
     }
 }

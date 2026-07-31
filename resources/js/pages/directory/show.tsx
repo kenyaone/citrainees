@@ -1,4 +1,5 @@
-import { Head, Link } from '@inertiajs/react';
+import { FormEvent, useState } from 'react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     Award,
@@ -7,7 +8,9 @@ import {
     ClipboardCheck,
     FileCheck,
     GraduationCap,
+    Mail,
     MapPin,
+    Send,
     ShieldCheck,
 } from 'lucide-react';
 
@@ -38,6 +41,7 @@ interface EmploymentRecord {
     confirmed_at: string | null;
 }
 interface Props {
+    contact_relay_email: string | null;
     alumni: {
         id: number;
         first_name: string;
@@ -68,7 +72,8 @@ function verifyBadge(via: string | null) {
     return { label: 'Verified', icon: CheckCircle2 };
 }
 
-export default function DirectoryShow({ alumni }: Props) {
+export default function DirectoryShow({ alumni, contact_relay_email }: Props) {
+    const flash = usePage<{ flash?: { directory_message_success?: boolean } }>().props.flash ?? {};
     const verifiedSkills = alumni.skills.filter((s) => s.verified_at);
     const unverifiedSkills = alumni.skills.filter((s) => !s.verified_at);
 
@@ -265,23 +270,141 @@ export default function DirectoryShow({ alumni }: Props) {
                         </div>
                     )}
 
-                    <div className="rounded-2xl bg-emerald-500/5 ring-1 ring-emerald-500/20 p-6 text-sm text-white/70">
-                        <div className="flex items-start gap-3">
-                            <ShieldCheck className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
-                            <div>
-                                <div className="font-semibold text-white mb-1">
-                                    How to reach {alumni.first_name}
-                                </div>
-                                <p>
-                                    {alumni.phone_primary || alumni.email_secondary
-                                        ? 'Contact details above were shared voluntarily by this alumnus. Please introduce yourself and mention that you found them on the CI Trainees directory.'
-                                        : `${alumni.first_name} hasn't shared direct contact details yet. A platform-mediated messaging feature is coming soon — for now, contact CI Kenya to be introduced.`}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                    <ContactRelay
+                        alumniId={alumni.id}
+                        firstName={alumni.first_name}
+                        hasDirectContact={!!(alumni.phone_primary || alumni.email_secondary)}
+                        success={!!flash.directory_message_success}
+                        relayEmail={contact_relay_email}
+                    />
                 </div>
             </div>
         </>
+    );
+}
+
+function ContactRelay({
+    alumniId,
+    firstName,
+    hasDirectContact,
+    success,
+    relayEmail,
+}: {
+    alumniId: number;
+    firstName: string;
+    hasDirectContact: boolean;
+    success: boolean;
+    relayEmail: string | null;
+}) {
+    const [values, setValues] = useState({
+        from_name: '',
+        from_email: '',
+        from_organisation: '',
+        purpose: '',
+        message: '',
+    });
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [processing, setProcessing] = useState(false);
+
+    const submit = (e: FormEvent) => {
+        e.preventDefault();
+        setProcessing(true);
+        router.post(`/directory/${alumniId}/message`, values, {
+            preserveScroll: true,
+            onError: (errs) => setErrors(errs as Record<string, string>),
+            onSuccess: () =>
+                setValues({
+                    from_name: '',
+                    from_email: '',
+                    from_organisation: '',
+                    purpose: '',
+                    message: '',
+                }),
+            onFinish: () => setProcessing(false),
+        });
+    };
+
+    return (
+        <div className="rounded-2xl bg-emerald-500/5 ring-1 ring-emerald-500/20 p-6 space-y-4">
+            <div className="flex items-start gap-3">
+                <Mail className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                    <div className="font-semibold text-white mb-1">
+                        Get in touch with {firstName}
+                    </div>
+                    <p className="text-sm text-white/70">
+                        {hasDirectContact
+                            ? `${firstName} chose to share direct contact details above. You can also send a message through CI Kenya to introduce yourself — they'll relay it.`
+                            : `${firstName} hasn't shared direct contact details. Send a message via CI Kenya and they'll relay it to ${firstName} if it's a good fit.`}
+                    </p>
+                </div>
+            </div>
+
+            {success ? (
+                <div className="rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/30 p-4 text-sm text-emerald-100 flex items-start gap-2">
+                    <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                    <span>Sent. CI Kenya has your message and will introduce you to {firstName} if the fit looks right.</span>
+                </div>
+            ) : (
+                <form onSubmit={submit} className="grid sm:grid-cols-2 gap-3">
+                    <input
+                        type="text"
+                        required
+                        placeholder="Your name *"
+                        value={values.from_name}
+                        onChange={(e) => setValues({ ...values, from_name: e.target.value })}
+                        className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
+                    />
+                    <input
+                        type="email"
+                        required
+                        placeholder="Your work email *"
+                        value={values.from_email}
+                        onChange={(e) => setValues({ ...values, from_email: e.target.value })}
+                        className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
+                    />
+                    <input
+                        type="text"
+                        placeholder="Organisation"
+                        value={values.from_organisation}
+                        onChange={(e) => setValues({ ...values, from_organisation: e.target.value })}
+                        className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
+                    />
+                    <input
+                        type="text"
+                        placeholder="Purpose (e.g. Hiring, Internship, Chat)"
+                        value={values.purpose}
+                        onChange={(e) => setValues({ ...values, purpose: e.target.value })}
+                        className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
+                    />
+                    <textarea
+                        required
+                        rows={4}
+                        placeholder={`Message for ${firstName} — mention the role, timeline, and why they'd be a fit *`}
+                        value={values.message}
+                        onChange={(e) => setValues({ ...values, message: e.target.value })}
+                        className="w-full sm:col-span-2 rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30 resize-y min-h-[100px]"
+                    />
+                    {errors.message && (
+                        <p className="sm:col-span-2 text-xs text-red-300 -mt-1">{errors.message}</p>
+                    )}
+                    <div className="sm:col-span-2 flex items-center justify-between gap-3 flex-wrap">
+                        <p className="text-xs text-white/40">
+                            {relayEmail
+                                ? `Sent to CI Kenya (${relayEmail}). Your email is shared with them so they can reply directly.`
+                                : 'Your message is stored — CI Kenya will follow up.'}
+                        </p>
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="inline-flex items-center gap-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-4 py-2 text-sm font-semibold disabled:opacity-60"
+                        >
+                            <Send className="h-4 w-4" />
+                            {processing ? 'Sending…' : 'Send message'}
+                        </button>
+                    </div>
+                </form>
+            )}
+        </div>
     );
 }

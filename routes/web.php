@@ -37,6 +37,7 @@ Route::post('join', [JoinController::class, 'store'])->middleware('throttle:publ
 
 Route::get('directory', [DirectoryController::class, 'index'])->name('directory.index');
 Route::get('directory/{alumni}', [DirectoryController::class, 'show'])->name('directory.show');
+Route::post('directory/{alumni}/message', [DirectoryController::class, 'sendMessage'])->middleware('throttle:public-form')->name('directory.message');
 
 Route::get('staff-signup/{token}', [StaffSignupController::class, 'show'])->name('staff-signup.show');
 Route::post('staff-signup/{token}', [StaffSignupController::class, 'store'])->middleware('throttle:public-token')->name('staff-signup.store');
