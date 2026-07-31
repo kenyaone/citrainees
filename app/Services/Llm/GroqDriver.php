@@ -30,6 +30,7 @@ class GroqDriver implements LlmDriver
                 'model' => config('assessments.groq.model'),
                 'response_format' => ['type' => 'json_object'],
                 'temperature' => 0.7,
+                'max_tokens' => 4096,
                 'messages' => [
                     ['role' => 'system', 'content' => $systemWithSchema],
                     ['role' => 'user', 'content' => $user],
@@ -46,6 +47,15 @@ class GroqDriver implements LlmDriver
             throw new RuntimeException('Groq response missing message content: '.$response->body());
         }
 
-        return json_decode($text, true, flags: JSON_THROW_ON_ERROR);
+        // Sometimes the model wraps JSON in ```json fences even with json_object mode.
+        $text = trim($text);
+        $text = preg_replace('/^```(?:json)?\s*/', '', $text);
+        $text = preg_replace('/\s*```$/', '', $text);
+
+        try {
+            return json_decode($text, true, flags: JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            throw new RuntimeException('Groq returned invalid JSON: '.substr($text, 0, 200).'...');
+        }
     }
 }
