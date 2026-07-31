@@ -5,6 +5,14 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+# Source NVM if installed — shared cPanel hosts don't have node on the default PATH,
+# and cron/non-interactive shells don't run ~/.bashrc where the NVM installer wires itself up.
+if [ -s "$HOME/.nvm/nvm.sh" ]; then
+    export NVM_DIR="$HOME/.nvm"
+    # shellcheck disable=SC1091
+    . "$NVM_DIR/nvm.sh"
+fi
+
 echo "→ Pulling latest from origin/main..."
 git pull origin main
 
