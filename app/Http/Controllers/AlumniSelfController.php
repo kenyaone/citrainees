@@ -63,7 +63,8 @@ class AlumniSelfController extends Controller
             fn ($e) => ! empty($e->confirmation_token) || ! empty($e->confirmed_at),
         );
         $publicOptedIn = (bool) $alumni->is_public;
-        $stillStudying = $alumni->current_status === 'studying';
+        $stillStudying = $alumni->current_status === 'studying'
+            || $educationRecords->contains(fn ($e) => $e->completion_status === 'ongoing');
 
         $steps = [
             ['key' => 'photo', 'label' => 'Add a profile photo', 'done' => $hasPhoto, 'hint' => 'Use the camera button on your avatar.'],
