@@ -8,13 +8,17 @@ import {
     ClipboardCheck,
     FileCheck,
     GraduationCap,
+    Handshake,
     LineChart,
+    MapPin,
     Search,
     ShieldCheck,
     Sparkles,
+    UserPlus,
     Users,
 } from 'lucide-react';
 import { dashboard, login } from '@/routes';
+import KenyaCountyMap from '@/components/kenya-county-map';
 
 interface Props {
     stats: {
@@ -25,6 +29,7 @@ interface Props {
         clusters_count: number;
         skills_catalog_count: number;
     };
+    alumni_by_county: Record<string, number>;
 }
 
 function StatBlock({ value, label }: { value: number; label: string }) {
@@ -92,7 +97,7 @@ function AlumniCard({
     );
 }
 
-export default function Welcome({ stats }: Props) {
+export default function Welcome({ stats, alumni_by_county }: Props) {
     const { auth } = usePage<{ auth: { user: { role?: string } | null } }>().props;
 
     return (
@@ -319,6 +324,149 @@ export default function Welcome({ stats }: Props) {
                                     Any skill, any role — attested on the job
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* KENYA COVERAGE MAP */}
+                <section className="relative py-24 bg-gradient-to-b from-slate-950 to-slate-950/60">
+                    <div className="mx-auto max-w-7xl px-6 grid lg:grid-cols-2 gap-12 items-center">
+                        <div>
+                            <div className="text-xs font-semibold uppercase tracking-widest text-emerald-400 mb-3 flex items-center gap-2">
+                                <MapPin className="h-3.5 w-3.5" />
+                                Nationwide reach
+                            </div>
+                            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
+                                Alumni across all <br />47 Kenyan counties.
+                            </h2>
+                            <p className="mt-4 text-white/60 leading-relaxed">
+                                Compassion International Kenya sponsors young people from the coast
+                                to Turkana, from Busia to Mandera. The map lights up as CI project
+                                centres onboard their alumni — brighter dots mean more alumni tracked
+                                in that county.
+                            </p>
+
+                            <div className="mt-8 grid grid-cols-2 gap-4">
+                                <div className="rounded-xl bg-white/[0.03] ring-1 ring-white/10 p-4">
+                                    <div className="text-3xl font-semibold tabular-nums">
+                                        {Object.keys(alumni_by_county).length}
+                                        <span className="text-lg text-white/40"> / 47</span>
+                                    </div>
+                                    <div className="text-xs text-white/50 mt-1">counties with alumni</div>
+                                </div>
+                                <div className="rounded-xl bg-white/[0.03] ring-1 ring-white/10 p-4">
+                                    <div className="text-3xl font-semibold tabular-nums">
+                                        {stats.clusters_count}
+                                    </div>
+                                    <div className="text-xs text-white/50 mt-1">CI clusters mapped</div>
+                                </div>
+                            </div>
+
+                            <p className="mt-6 text-xs text-white/40">
+                                Hover a dot to see the county name and alumni count. Dot size and
+                                brightness scale with the number of alumni tracked there.
+                            </p>
+                        </div>
+
+                        <div className="rounded-2xl bg-slate-900/50 ring-1 ring-white/10 p-4 lg:p-6">
+                            <KenyaCountyMap coverage={alumni_by_county} />
+                        </div>
+                    </div>
+                </section>
+
+                {/* JOURNEY TIMELINE */}
+                <section className="relative py-24 bg-slate-950">
+                    <div className="mx-auto max-w-6xl px-6">
+                        <div className="max-w-2xl mx-auto text-center">
+                            <div className="text-xs font-semibold uppercase tracking-widest text-emerald-400 mb-3">
+                                An alumnus journey
+                            </div>
+                            <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">
+                                From Form Four to their first job — <br />
+                                <span className="text-white/60">without losing them along the way.</span>
+                            </h2>
+                        </div>
+
+                        <div className="mt-16 relative">
+                            <div className="absolute left-1/2 -translate-x-1/2 top-8 bottom-8 w-px bg-gradient-to-b from-emerald-500/40 via-emerald-500/20 to-emerald-500/40 hidden md:block" />
+
+                            {[
+                                {
+                                    step: '01',
+                                    icon: GraduationCap,
+                                    title: 'Finish Form Four',
+                                    body: 'CI staff records the alumnus into the tracer with their KCSE year and project centre. Or the alumnus signs up themselves via a one-shot link.',
+                                    side: 'left',
+                                },
+                                {
+                                    step: '02',
+                                    icon: UserPlus,
+                                    title: 'Build the profile',
+                                    body: 'Add post-secondary training, skills, work history. Every field is opt-in for the public directory — full control over what employers see.',
+                                    side: 'right',
+                                },
+                                {
+                                    step: '03',
+                                    icon: ShieldCheck,
+                                    title: 'Verify skills',
+                                    body: 'Take a quiz. Upload a certificate. Or ask a past employer to confirm the work. Three trust paths — each visible to employers as a distinct badge.',
+                                    side: 'left',
+                                },
+                                {
+                                    step: '04',
+                                    icon: Handshake,
+                                    title: 'Get discovered & hired',
+                                    body: 'Employers search the directory, filter by verified skill + county, and reach out through the platform. Placements are recorded — outcomes become donor-report gold.',
+                                    side: 'right',
+                                },
+                            ].map(({ step, icon: Icon, title, body, side }, i) => {
+                                const isLast = i === 3;
+                                const accentBg = isLast ? 'bg-amber-500/10' : 'bg-emerald-500/10';
+                                const accentRing = isLast ? 'ring-amber-500/30' : 'ring-emerald-500/30';
+                                const accentText = isLast ? 'text-amber-400' : 'text-emerald-400';
+                                const dotBg = isLast ? 'bg-amber-500' : 'bg-emerald-500';
+                                const dotRing = isLast ? 'ring-amber-500/20' : 'ring-emerald-500/20';
+                                const hoverRing = isLast ? 'hover:ring-amber-500/40' : 'hover:ring-emerald-500/40';
+                                return (
+                                    <div
+                                        key={step}
+                                        className="relative md:grid md:grid-cols-2 md:gap-8 mb-10 md:mb-16 items-center"
+                                    >
+                                        <div className={side === 'right' ? 'md:col-start-2' : 'md:col-start-1'}>
+                                            <div className={`rounded-2xl bg-white/[0.03] ring-1 ring-white/10 p-6 transition ${hoverRing}`}>
+                                                <div className="flex items-start gap-4">
+                                                    <div className={`h-12 w-12 rounded-xl ${accentBg} ring-1 ${accentRing} grid place-items-center flex-shrink-0`}>
+                                                        <Icon className={`h-6 w-6 ${accentText}`} />
+                                                    </div>
+                                                    <div>
+                                                        <div className={`text-xs font-mono ${accentText} mb-1`}>
+                                                            {step}
+                                                        </div>
+                                                        <h3 className="text-lg font-semibold">{title}</h3>
+                                                        <p className="mt-2 text-sm text-white/60 leading-relaxed">
+                                                            {body}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="hidden md:flex md:items-center md:justify-center absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
+                                            <div className={`h-4 w-4 rounded-full ${dotBg} ring-4 ${dotRing} shadow-[0_0_20px_rgba(16,185,129,0.6)]`} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="mt-12 text-center">
+                            <Link
+                                href={login()}
+                                className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 px-6 py-3 text-sm font-semibold shadow-lg shadow-emerald-500/20"
+                            >
+                                Start your journey
+                                <ArrowRight className="h-4 w-4" />
+                            </Link>
                         </div>
                     </div>
                 </section>

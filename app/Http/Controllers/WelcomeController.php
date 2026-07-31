@@ -17,6 +17,13 @@ class WelcomeController extends Controller
     {
         $verifiedSkillCount = DB::table('alumni_skill')->whereNotNull('verified_at')->count();
 
+        $alumniByCounty = Alumni::query()
+            ->whereNotNull('county')
+            ->selectRaw('county, count(*) as total')
+            ->groupBy('county')
+            ->pluck('total', 'county')
+            ->all();
+
         return Inertia::render('welcome', [
             'stats' => [
                 'alumni_count' => Alumni::count(),
@@ -26,6 +33,7 @@ class WelcomeController extends Controller
                 'clusters_count' => CiCluster::count(),
                 'skills_catalog_count' => Skill::count(),
             ],
+            'alumni_by_county' => $alumniByCounty,
         ]);
     }
 }
