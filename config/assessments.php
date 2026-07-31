@@ -2,8 +2,16 @@
 
 return [
     // Active LLM provider for practical assessment task generation + grading, and
-    // for the AI quiz generator command. Options: 'gemini', 'anthropic'.
-    'provider' => env('ASSESSMENT_AI_PROVIDER', 'gemini'),
+    // for the AI quiz generator command. Options: 'groq', 'gemini', 'anthropic'.
+    'provider' => env('ASSESSMENT_AI_PROVIDER', 'groq'),
+
+    // Groq (free tier at https://console.groq.com/keys — no card required, 14K req/day).
+    'groq' => [
+        'api_key' => env('GROQ_API_KEY'),
+        'model' => env('GROQ_MODEL', 'llama-3.3-70b-versatile'),
+        'endpoint' => 'https://api.groq.com/openai/v1/chat/completions',
+        'timeout_seconds' => 90,
+    ],
 
     // Google Gemini (free tier at https://aistudio.google.com/apikey — no card required).
     'gemini' => [

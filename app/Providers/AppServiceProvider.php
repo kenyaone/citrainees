@@ -21,7 +21,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(\App\Services\Llm\LlmDriver::class, function () {
             return match (config('assessments.provider')) {
                 'anthropic' => new \App\Services\Llm\AnthropicDriver(),
-                default => new \App\Services\Llm\GeminiDriver(),
+                'gemini' => new \App\Services\Llm\GeminiDriver(),
+                default => new \App\Services\Llm\GroqDriver(),
             };
         });
     }
