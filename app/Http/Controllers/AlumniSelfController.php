@@ -63,16 +63,25 @@ class AlumniSelfController extends Controller
             fn ($e) => ! empty($e->confirmation_token) || ! empty($e->confirmed_at),
         );
         $publicOptedIn = (bool) $alumni->is_public;
+        $stillStudying = $alumni->current_status === 'studying';
 
-        return [
+        $steps = [
             ['key' => 'photo', 'label' => 'Add a profile photo', 'done' => $hasPhoto, 'hint' => 'Use the camera button on your avatar.'],
             ['key' => 'skills', 'label' => 'Tag at least 3 skills', 'done' => $skillsTagged, 'hint' => 'Employers filter by skill first.'],
             ['key' => 'cert', 'label' => 'Upload one certificate', 'done' => $hasVerifiedOrPendingSkillCert, 'hint' => 'Skill or education — either counts.'],
             ['key' => 'education', 'label' => 'Add your education', 'done' => $hasEducation, 'hint' => 'TVET, college, or university.'],
-            ['key' => 'employment', 'label' => 'Add current or past work', 'done' => $hasEmployment, 'hint' => 'Include internships or attachments.'],
-            ['key' => 'confirm', 'label' => 'Ask an employer to confirm', 'done' => $employerConfirmRequested, 'hint' => 'The strongest verification signal.'],
-            ['key' => 'public', 'label' => 'Opt in to public directory', 'done' => $publicOptedIn, 'hint' => 'Toggle at the bottom of "Contact & status".'],
         ];
+
+        // Work-history + employer confirmation only kick in for alumni who have
+        // finished studying. In-college users are nudged on the other four instead.
+        if (! $stillStudying) {
+            $steps[] = ['key' => 'employment', 'label' => 'Add current or past work', 'done' => $hasEmployment, 'hint' => 'Include internships or attachments.'];
+            $steps[] = ['key' => 'confirm', 'label' => 'Ask an employer to confirm', 'done' => $employerConfirmRequested, 'hint' => 'The strongest verification signal.'];
+        }
+
+        $steps[] = ['key' => 'public', 'label' => 'Opt in to public directory', 'done' => $publicOptedIn, 'hint' => 'Toggle at the bottom of "Contact & status".'];
+
+        return $steps;
     }
 
     public function update(Request $request): RedirectResponse
