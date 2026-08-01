@@ -20,7 +20,6 @@ class DirectoryController extends Controller
     public function index(Request $request): Response
     {
         $filters = $request->validate([
-            'q' => ['nullable', 'string', 'max:100'],
             'skill' => ['nullable', 'string', 'max:100'],
             'county' => ['nullable', 'string', 'max:64'],
             'ci_cluster_id' => ['nullable', 'integer', 'exists:ci_clusters,id'],
@@ -38,13 +37,6 @@ class DirectoryController extends Controller
                     ->select('skills.id', 'name', 'category'),
             ]);
 
-        if (! empty($filters['q'])) {
-            $q = $filters['q'];
-            $query->where(function ($sub) use ($q) {
-                $sub->where('first_name', 'like', "%{$q}%")
-                    ->orWhere('last_name', 'like', "%{$q}%");
-            });
-        }
         if (! empty($filters['skill'])) {
             // Free-text skill search — match any verified skill whose name
             // (or category) contains the query. Employers can type in-catalog

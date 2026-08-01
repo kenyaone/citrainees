@@ -44,7 +44,6 @@ interface Paginated<T> {
     to?: number | null;
 }
 interface Filters {
-    q?: string;
     skill?: string;
     county?: string;
     ci_cluster_id?: number | string;
@@ -68,7 +67,6 @@ function verifiedIcon(via: string | undefined) {
 
 export default function DirectoryIndex({ alumni, filters, skills, clusters, counties }: Props) {
     const [form, setForm] = useState<Filters>({
-        q: filters.q ?? '',
         skill: filters.skill ?? '',
         county: filters.county ?? '',
         ci_cluster_id: filters.ci_cluster_id ?? '',
@@ -86,7 +84,7 @@ export default function DirectoryIndex({ alumni, filters, skills, clusters, coun
     };
 
     const clear = () => {
-        setForm({ q: '', skill: '', county: '', ci_cluster_id: '', year_from: '', year_to: '' });
+        setForm({ skill: '', county: '', ci_cluster_id: '', year_from: '', year_to: '' });
         router.get('/directory');
     };
 
@@ -129,34 +127,26 @@ export default function DirectoryIndex({ alumni, filters, skills, clusters, coun
 
                     <form
                         onSubmit={submit}
-                        className="rounded-2xl bg-white/[0.03] ring-1 ring-white/10 p-4 lg:p-5 mb-8"
+                        className="rounded-2xl bg-white/[0.03] ring-1 ring-white/10 p-4 lg:p-5 mb-8 space-y-3"
                     >
-                        <div className="grid md:grid-cols-6 gap-3">
-                            <div className="md:col-span-2 relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
-                                <input
-                                    type="text"
-                                    placeholder="Search name…"
-                                    value={form.q}
-                                    onChange={(e) => setForm({ ...form, q: e.target.value })}
-                                    className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none pl-9 pr-3 py-2 text-sm placeholder-white/30"
-                                />
-                            </div>
-                            <div>
-                                <input
-                                    type="text"
-                                    list="skill-suggestions"
-                                    placeholder="Skill (type or pick)"
-                                    value={form.skill}
-                                    onChange={(e) => setForm({ ...form, skill: e.target.value })}
-                                    className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
-                                />
-                                <datalist id="skill-suggestions">
-                                    {skills.map((s) => (
-                                        <option key={s.id} value={s.name} />
-                                    ))}
-                                </datalist>
-                            </div>
+                        <div className="relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-white/40" />
+                            <input
+                                type="text"
+                                list="skill-suggestions"
+                                placeholder="Search by skill — e.g. welding, digital marketing, nursing"
+                                value={form.skill}
+                                onChange={(e) => setForm({ ...form, skill: e.target.value })}
+                                className="w-full rounded-xl bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none pl-12 pr-3 py-3 text-base placeholder-white/40"
+                                autoFocus
+                            />
+                            <datalist id="skill-suggestions">
+                                {skills.map((s) => (
+                                    <option key={s.id} value={s.name} />
+                                ))}
+                            </datalist>
+                        </div>
+                        <div className="grid md:grid-cols-3 gap-3">
                             <select
                                 value={form.county}
                                 onChange={(e) => setForm({ ...form, county: e.target.value })}
