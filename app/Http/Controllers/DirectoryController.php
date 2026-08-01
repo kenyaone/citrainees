@@ -68,6 +68,18 @@ class DirectoryController extends Controller
             ->paginate(24)
             ->withQueryString();
 
+        // Top 10 skills by count of alumni with a verified pivot — surfaces
+        // the "hot" skills as quick-pick chips on the directory search bar.
+        $topSkills = \Illuminate\Support\Facades\DB::table('alumni_skill')
+            ->join('skills', 'skills.id', '=', 'alumni_skill.skill_id')
+            ->join('alumni', 'alumni.id', '=', 'alumni_skill.alumni_id')
+            ->whereNotNull('alumni_skill.verified_at')
+            ->where('alumni.is_public', true)
+            ->groupBy('skills.id', 'skills.name')
+            ->orderByRaw('COUNT(*) DESC')
+            ->limit(10)
+            ->pluck('skills.name');
+
         return Inertia::render('directory/index', [
             'alumni' => $alumni,
             'filters' => $filters,
@@ -75,6 +87,7 @@ class DirectoryController extends Controller
                 ->orderBy('category')
                 ->orderBy('name')
                 ->get(['id', 'name', 'category']),
+            'top_skills' => $topSkills,
             'clusters' => CiCluster::query()
                 ->orderBy('name')
                 ->get(['id', 'name', 'region']),

@@ -54,6 +54,7 @@ interface Props {
     alumni: Paginated<AlumniItem>;
     filters: Filters;
     skills: Skill[];
+    top_skills: string[];
     clusters: Cluster[];
     counties: string[];
 }
@@ -65,7 +66,7 @@ function verifiedIcon(via: string | undefined) {
     return <CheckCircle2 className="h-3 w-3" />;
 }
 
-export default function DirectoryIndex({ alumni, filters, skills, clusters, counties }: Props) {
+export default function DirectoryIndex({ alumni, filters, skills, top_skills, clusters, counties }: Props) {
     const [form, setForm] = useState<Filters>({
         skill: filters.skill ?? '',
         county: filters.county ?? '',
@@ -78,6 +79,16 @@ export default function DirectoryIndex({ alumni, filters, skills, clusters, coun
         e.preventDefault();
         const clean: Record<string, string> = {};
         Object.entries(form).forEach(([k, v]) => {
+            if (v !== '' && v != null) clean[k] = String(v);
+        });
+        router.get('/directory', clean, { preserveState: true, preserveScroll: true });
+    };
+
+    const pickSuggestedSkill = (skill: string) => {
+        setForm((f) => ({ ...f, skill }));
+        const next = { ...form, skill };
+        const clean: Record<string, string> = {};
+        Object.entries(next).forEach(([k, v]) => {
             if (v !== '' && v != null) clean[k] = String(v);
         });
         router.get('/directory', clean, { preserveState: true, preserveScroll: true });
@@ -146,6 +157,28 @@ export default function DirectoryIndex({ alumni, filters, skills, clusters, coun
                                 ))}
                             </datalist>
                         </div>
+
+                        {top_skills.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1.5">
+                                <span className="text-[11px] uppercase tracking-widest text-white/40 mr-1">
+                                    Popular:
+                                </span>
+                                {top_skills.map((s) => (
+                                    <button
+                                        key={s}
+                                        type="button"
+                                        onClick={() => pickSuggestedSkill(s)}
+                                        className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium ring-1 transition ${
+                                            form.skill === s
+                                                ? 'bg-emerald-500 text-slate-950 ring-emerald-500'
+                                                : 'bg-white/5 text-white/70 ring-white/10 hover:bg-white/10 hover:text-white'
+                                        }`}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                         <div className="grid md:grid-cols-3 gap-3">
                             <select
                                 value={form.county}
