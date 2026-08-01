@@ -21,7 +21,7 @@ class DirectoryController extends Controller
     {
         $filters = $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
-            'skill_id' => ['nullable', 'integer', 'exists:skills,id'],
+            'skill' => ['nullable', 'string', 'max:100'],
             'county' => ['nullable', 'string', 'max:64'],
             'ci_cluster_id' => ['nullable', 'integer', 'exists:ci_clusters,id'],
             'year_from' => ['nullable', 'integer', 'between:1990,'.(int) date('Y')],
@@ -45,10 +45,17 @@ class DirectoryController extends Controller
                     ->orWhere('last_name', 'like', "%{$q}%");
             });
         }
-        if (! empty($filters['skill_id'])) {
+        if (! empty($filters['skill'])) {
+            // Free-text skill search — match any verified skill whose name
+            // (or category) contains the query. Employers can type in-catalog
+            // ("Web Design") or their own phrasing ("front end").
+            $skillQ = $filters['skill'];
             $query->whereHas('skills', fn ($q) => $q
-                ->where('skills.id', $filters['skill_id'])
-                ->whereNotNull('alumni_skill.verified_at'));
+                ->whereNotNull('alumni_skill.verified_at')
+                ->where(function ($sub) use ($skillQ) {
+                    $sub->where('skills.name', 'like', "%{$skillQ}%")
+                        ->orWhere('skills.category', 'like', "%{$skillQ}%");
+                }));
         }
         if (! empty($filters['county'])) {
             $query->where('county', $filters['county']);

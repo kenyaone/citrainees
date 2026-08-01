@@ -45,7 +45,7 @@ interface Paginated<T> {
 }
 interface Filters {
     q?: string;
-    skill_id?: number | string;
+    skill?: string;
     county?: string;
     ci_cluster_id?: number | string;
     year_from?: number | string;
@@ -69,7 +69,7 @@ function verifiedIcon(via: string | undefined) {
 export default function DirectoryIndex({ alumni, filters, skills, clusters, counties }: Props) {
     const [form, setForm] = useState<Filters>({
         q: filters.q ?? '',
-        skill_id: filters.skill_id ?? '',
+        skill: filters.skill ?? '',
         county: filters.county ?? '',
         ci_cluster_id: filters.ci_cluster_id ?? '',
         year_from: filters.year_from ?? '',
@@ -86,7 +86,7 @@ export default function DirectoryIndex({ alumni, filters, skills, clusters, coun
     };
 
     const clear = () => {
-        setForm({ q: '', skill_id: '', county: '', ci_cluster_id: '', year_from: '', year_to: '' });
+        setForm({ q: '', skill: '', county: '', ci_cluster_id: '', year_from: '', year_to: '' });
         router.get('/directory');
     };
 
@@ -142,18 +142,21 @@ export default function DirectoryIndex({ alumni, filters, skills, clusters, coun
                                     className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none pl-9 pr-3 py-2 text-sm placeholder-white/30"
                                 />
                             </div>
-                            <select
-                                value={form.skill_id}
-                                onChange={(e) => setForm({ ...form, skill_id: e.target.value })}
-                                className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm"
-                            >
-                                <option value="">Any skill</option>
-                                {skills.map((s) => (
-                                    <option key={s.id} value={s.id}>
-                                        {s.name}
-                                    </option>
-                                ))}
-                            </select>
+                            <div>
+                                <input
+                                    type="text"
+                                    list="skill-suggestions"
+                                    placeholder="Skill (type or pick)"
+                                    value={form.skill}
+                                    onChange={(e) => setForm({ ...form, skill: e.target.value })}
+                                    className="w-full rounded-lg bg-white/5 ring-1 ring-white/10 focus:ring-emerald-500/50 focus:outline-none px-3 py-2 text-sm placeholder-white/30"
+                                />
+                                <datalist id="skill-suggestions">
+                                    {skills.map((s) => (
+                                        <option key={s.id} value={s.name} />
+                                    ))}
+                                </datalist>
+                            </div>
                             <select
                                 value={form.county}
                                 onChange={(e) => setForm({ ...form, county: e.target.value })}
