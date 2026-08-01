@@ -1,14 +1,11 @@
 <x-mail::message>
-# Employer interest in {{ $alumniName }}
+# Habari {{ $alumniFirstName }},
 
-**{{ $fromName }}**{{ $fromOrg ? ' — '.$fromOrg : '' }} reached out about **{{ $alumniName }}** via the public alumni directory.
+**{{ $fromName }}**{{ $fromOrg ? ' from '.$fromOrg : '' }} found your profile on the CI Trainees directory and wants to reach you.
 
 @if ($purpose)
-**Purpose:** {{ $purpose }}
+**About:** {{ $purpose }}
 @endif
-
-**Their email:** {{ $fromEmail }}
-(Replying to this message will go directly to them.)
 
 ---
 
@@ -16,11 +13,10 @@
 
 ---
 
-<x-mail::button :url="$alumniProfileUrl">
-View alumnus profile
-</x-mail::button>
+To reply, just hit **Reply** in your email app — it goes directly to {{ $fromName }} at **{{ $fromEmail }}**.
 
-Please introduce the employer to {{ $alumniName }} if the fit looks right, or reply directly to decline.
+If this looks like spam or a scam, ignore it. We never share your phone or personal email — only what you opted in to.
 
-CI Trainees
+Karibu,
+Compassion International Kenya
 </x-mail::message>

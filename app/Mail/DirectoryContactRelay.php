@@ -18,9 +18,11 @@ class DirectoryContactRelay extends Mailable
 
     public function envelope(): Envelope
     {
-        $name = "{$this->alumni->first_name} {$this->alumni->last_name}";
+        $fromOrg = $this->contactMessage->from_organisation
+            ? " ({$this->contactMessage->from_organisation})"
+            : '';
         return new Envelope(
-            subject: "New employer interest in {$name}",
+            subject: "New enquiry via CI Trainees — from {$this->contactMessage->from_name}{$fromOrg}",
             replyTo: [$this->contactMessage->from_email],
         );
     }
@@ -30,8 +32,7 @@ class DirectoryContactRelay extends Mailable
         return new Content(
             markdown: 'mail.directory-contact-relay',
             with: [
-                'alumniName' => "{$this->alumni->first_name} {$this->alumni->last_name}",
-                'alumniProfileUrl' => url('/directory/'.$this->alumni->id),
+                'alumniFirstName' => $this->alumni->first_name,
                 'fromName' => $this->contactMessage->from_name,
                 'fromEmail' => $this->contactMessage->from_email,
                 'fromOrg' => $this->contactMessage->from_organisation,

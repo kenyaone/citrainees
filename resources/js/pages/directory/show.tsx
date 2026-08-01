@@ -333,9 +333,10 @@ function ContactRelay({
                         Get in touch with {firstName}
                     </div>
                     <p className="text-sm text-white/70">
+                        Send a message and it goes straight to {firstName}'s email via the platform.
                         {hasDirectContact
-                            ? `${firstName} chose to share direct contact details above. You can also send a message through CI Kenya to introduce yourself — they'll relay it.`
-                            : `${firstName} hasn't shared direct contact details. Send a message via CI Kenya and they'll relay it to ${firstName} if it's a good fit.`}
+                            ? ` ${firstName} has also shared direct contact details above.`
+                            : ' Their email address stays private — you only see it if they reply.'}
                     </p>
                 </div>
             </div>
@@ -343,7 +344,7 @@ function ContactRelay({
             {success ? (
                 <div className="rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/30 p-4 text-sm text-emerald-100 flex items-start gap-2">
                     <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0 mt-0.5" />
-                    <span>Sent. CI Kenya has your message and will introduce you to {firstName} if the fit looks right.</span>
+                    <span>Sent directly to {firstName}. When they reply, it comes straight to your email — no middleman.</span>
                 </div>
             ) : (
                 <form onSubmit={submit} className="grid sm:grid-cols-2 gap-3">
@@ -390,9 +391,7 @@ function ContactRelay({
                     )}
                     <div className="sm:col-span-2 flex items-center justify-between gap-3 flex-wrap">
                         <p className="text-xs text-white/40">
-                            {relayEmail
-                                ? `Sent to CI Kenya (${relayEmail}). Your email is shared with them so they can reply directly.`
-                                : 'Your message is stored — CI Kenya will follow up.'}
+                            Delivered to {firstName} from the platform. Your email is in the Reply-To so they can reply directly.
                         </p>
                         <button
                             type="submit"

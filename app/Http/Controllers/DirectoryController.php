@@ -199,9 +199,13 @@ class DirectoryController extends Controller
             ->limit(1)
             ->update(['contact_attempted' => true]);
 
-        $relayTo = Config::get('mail.contact_relay_address') ?? Config::get('mail.from.address');
-        if ($relayTo && $this->mailIsConfigured()) {
-            Mail::to($relayTo)->send(new DirectoryContactRelay($contactMessage, $alumni));
+        // Message goes straight to the alumnus's login email. Reply-To is set to
+        // the employer's email so hitting Reply in Gmail routes directly to them
+        // — CI staff is not the middleman. The DirectoryMessage row is still
+        // stored for audit and future spam-detection.
+        $alumniEmail = $alumni->user?->email;
+        if ($alumniEmail && $this->mailIsConfigured()) {
+            Mail::to($alumniEmail)->send(new DirectoryContactRelay($contactMessage, $alumni));
             $contactMessage->update(['relayed_at' => now()]);
         }
 
