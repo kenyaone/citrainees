@@ -28,8 +28,11 @@ composer install --no-dev --optimize-autoloader --no-interaction
 
 echo "→ Extracting uploaded assets..."
 rm -rf public/build
-unzip -q "$ZIP" -d public/
-rm "$ZIP"
+# PowerShell's Compress-Archive uses backslash path separators, which makes
+# `unzip` exit 1 (a warning, not an error). We ignore the exit code and
+# verify success by checking manifest.json below.
+unzip -qo "$ZIP" -d public/ || true
+rm -f "$ZIP"
 
 if [ ! -f public/build/manifest.json ]; then
     echo "✗ public/build/manifest.json missing after extract. Zip layout may be wrong."
