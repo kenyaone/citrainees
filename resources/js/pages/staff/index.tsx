@@ -37,6 +37,7 @@ interface StaffMember {
 interface PendingInvite {
     id: number;
     email: string;
+    phone: string | null;
     name: string;
     role: string;
     expires_at: string;
@@ -69,7 +70,7 @@ function CopyButton({ text }: { text: string }) {
 }
 
 export default function StaffIndex({ staff, pending_invites }: Props) {
-    const [values, setValues] = useState({ email: '', name: '', role: 'staff', send_email: true });
+    const [values, setValues] = useState({ email: '', phone: '', name: '', role: 'staff', send_email: true });
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [processing, setProcessing] = useState(false);
 
@@ -80,7 +81,7 @@ export default function StaffIndex({ staff, pending_invites }: Props) {
             preserveScroll: true,
             onError: (errs) => setErrors(errs as Record<string, string>),
             onSuccess: () => {
-                setValues({ email: '', name: '', role: 'staff', send_email: true });
+                setValues({ email: '', phone: '', name: '', role: 'staff', send_email: true });
                 setErrors({});
             },
             onFinish: () => setProcessing(false),
@@ -105,7 +106,9 @@ export default function StaffIndex({ staff, pending_invites }: Props) {
 
     const waLink = (invite: PendingInvite) => {
         const msg = `Hello ${invite.name}, you've been invited to CI Trainees as ${invite.role}. Complete signup: ${invite.signup_url}`;
-        return 'https://wa.me/?text=' + encodeURIComponent(msg);
+        // If we have a phone, open the exact chat; otherwise show contact picker.
+        const base = invite.phone ? `https://wa.me/${invite.phone}` : 'https://wa.me/';
+        return `${base}?text=${encodeURIComponent(msg)}`;
     };
 
     return (
@@ -125,7 +128,7 @@ export default function StaffIndex({ staff, pending_invites }: Props) {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <form onSubmit={invite} className="grid md:grid-cols-4 gap-3">
+                        <form onSubmit={invite} className="grid md:grid-cols-5 gap-3">
                             <div>
                                 <Label>Name</Label>
                                 <Input
@@ -146,6 +149,16 @@ export default function StaffIndex({ staff, pending_invites }: Props) {
                                     required
                                 />
                                 <InputError message={errors.email} />
+                            </div>
+                            <div>
+                                <Label>Phone (WhatsApp)</Label>
+                                <Input
+                                    type="tel"
+                                    value={values.phone}
+                                    onChange={(e) => setValues({ ...values, phone: e.target.value })}
+                                    placeholder="0712345678"
+                                />
+                                <InputError message={errors.phone} />
                             </div>
                             <div>
                                 <Label>Role</Label>

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class StaffInvitation extends Model
 {
     protected $fillable = [
-        'email', 'name', 'role',
+        'email', 'phone', 'name', 'role',
         'invited_by', 'token',
         'expires_at', 'accepted_at', 'user_id',
     ];

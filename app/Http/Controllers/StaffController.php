@@ -33,6 +33,7 @@ class StaffController extends Controller
                 ->map(fn ($i) => [
                     'id' => $i->id,
                     'email' => $i->email,
+                    'phone' => $i->phone,
                     'name' => $i->name,
                     'role' => $i->role,
                     'expires_at' => $i->expires_at->toIso8601String(),
@@ -51,13 +52,28 @@ class StaffController extends Controller
                 Rule::unique('users', 'email'),
                 Rule::unique('staff_invitations', 'email')->whereNull('accepted_at'),
             ],
+            'phone' => ['nullable', 'string', 'max:20'],
             'name' => ['required', 'string', 'max:150'],
             'role' => ['required', 'in:staff,admin,employer'],
             'send_email' => ['sometimes', 'boolean'],
         ]);
 
+        // Normalise Kenyan phone numbers to intl format (wa.me needs country code, no +).
+        if (! empty($data['phone'])) {
+            $digits = preg_replace('/\D/', '', $data['phone']);
+            if (str_starts_with($digits, '0') && strlen($digits) === 10) {
+                $digits = '254'.substr($digits, 1); // 0712345678 → 254712345678
+            } elseif (str_starts_with($digits, '7') || str_starts_with($digits, '1')) {
+                if (strlen($digits) === 9) {
+                    $digits = '254'.$digits; // 712345678 → 254712345678
+                }
+            }
+            $data['phone'] = $digits;
+        }
+
         $invite = StaffInvitation::create([
             'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
             'name' => $data['name'],
             'role' => $data['role'],
             'invited_by' => $request->user()->id,
